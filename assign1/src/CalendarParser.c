@@ -1,85 +1,13 @@
-#ifndef CALENDARPARSER_H
-#define CALENDARPARSER_H
+/************************************
+ *  Name: Joseph Coffa              *
+ *  Student #: 1007320              *
+ *  Due Date: February 4, 2019      *
+ *                                  *
+ *  Assignment 1, CIS*2750          *
+ *  CalendarParser.c                *
+ ************************************/
 
-#include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "LinkedListAPI.h"
-
-//Error codes that indicate what went wrong during parsing
-typedef enum ers {OK, INV_FILE, INV_CAL, INV_VER, DUP_VER, INV_PRODID, DUP_PRODID, INV_EVENT, INV_DT, INV_ALARM, WRITE_ERROR, OTHER_ERROR } ICalErrorCode;
-
-//Represents iCalendar Date-time
-typedef struct dt {
-	//YYYYMMDD
-	char date[9]; 
-	//hhmmss
-	char time[7]; 
-	//indicates whether this is UTC time
-	bool	UTC;  
-} DateTime;
-
-//Represents a generic iCalendar property
-typedef struct prop {
-	//Property name.  We will assume that the property name, even if malformed, does not exceed 200 bytes
-	char 	propName[200];
-	//Property description.  We use a C99 flexible array member, which we will discuss in class.
-	//Must not be empty
-	char	propDescr[]; 
-} Property;
-
-//Represents an iCalendar alarm component
-typedef struct alarm {
-	//Alarm action.  We will assume that the action, even if malformed, does not exceed 200 bytes
-    char    action[200];
-	//Alarm trigger.  Must not be null.
-    char*   trigger;
-	//Additional alarm properties.  
-	//All objects in the list will be of type Property.  It must not be NULL.  It may be empty.
-    List*    properties;
-} Alarm;
-
-//Represents an iCalendar event component
-typedef struct evt {
-	//Event user ID.  We will assume that the UserID, even if malformed, does not exceed 1000 bytes
-	char 		UID[1000];
-	//Event creation date-time.
-    DateTime 	creationDateTime;
-    
-    //Event start date-time.
-    DateTime     startDateTime;
-    
-	//Additional event properties.  
-	//All objects in the list will be of type Property.  It must not be NULL.  It may be empty.
-	List* 	    properties;
-	//List of alarms associated with the event.  
-	//All objects in the list will be of type Alarm.  It must not be NULL.  It may be empty.
-    List*        alarms;
-	
-} Event;
-
-
-//Represents an iCalendar object
-typedef struct ical {
-	//iCalendar version
-	float 	version;
-	//Product ID.  We will assume that the UserID, even if malformed, does not exceed 1000 bytes.  Must not be an empty string.
-	char 	prodID[1000];
-	
-	//List of events associated with the event.  
-	//All objects in the list will be of type Alarm.  It must not be NULL.  It must not be empty.
-	List* events;
-    
-	//Additional calendar properties.  
-	//All objects in the list will be of type Property.  It must not be NULL.  It may be empty.
-    List* properties;
-    
-} Calendar;
-
-
-
+#include "CalendarParser.h"
 
 /** Function to create a Calendar object based on the contents of an iCalendar file.
  *@pre File name cannot be an empty string or NULL.  File name must have the .ics extension.
@@ -157,6 +85,3 @@ char* printProperty(void* toBePrinted);
 void deleteDate(void* toBeDeleted);
 int compareDates(const void* first, const void* second);
 char* printDate(void* toBePrinted);
-// **************************************************************************
-
-#endif	
