@@ -1,0 +1,6 @@
+BEGIN:VCALENDAR
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+VERSION:2.0
+CALSCALE:GREGORIAN
+DESCRIPTION:A simple calendar that is a small test of some functions.
+END:VCALENDAR

@@ -7,7 +7,9 @@
  *  LinkedListAPI.c                 *
  ************************************/
 
-#include "LinkedListAPI.h"
+// FIXME NO PATHS IN INCLUDE STATEMENTS
+//       Use shared libraries after you figure out how to do that
+#include "../../LinkedListAPI.h"
 
 /** Function to initialize the list metadata head with the appropriate function pointers.
 * This function verifies that its arguments are not NULL, allocates a new List struct, and initializes it using
@@ -19,7 +21,24 @@
 *@param deleteFunction - function pointer to delete a single piece of data from the list
 *@param compareFunction - function pointer to compare two nodes of the list in order to test for equality or order
 **/
-List* initializeList(char* (*printFunction)(void* toBePrinted),void (*deleteFunction)(void* toBeDeleted),int (*compareFunction)(const void* first,const void* second));
+List* initializeList(char* (*printFunction)(void* toBePrinted),void (*deleteFunction)(void* toBeDeleted),int (*compareFunction)(const void* first,const void* second)) {
+    List *toReturn = malloc(sizeof(List));
+
+    // return NULL if any parameters are invalid or malloc fails
+    if (!toReturn || !printFunction || !deleteFunction || !compareFunction) {
+        return NULL;
+    }
+
+    // initialize elements of the List
+    toReturn->head = NULL;
+    toReturn->tail = NULL;
+    toReturn->length = 0;
+    toReturn->deleteData = deleteFunction;
+    toReturn->compare = compareFunction;
+    toReturn->printData = printFunction;
+
+    return toReturn;
+}
 
 
 
@@ -32,7 +51,16 @@ List* initializeList(char* (*printFunction)(void* toBePrinted),void (*deleteFunc
 *@return On success returns a node that can be added to a linked list. On failure, returns NULL.
 *@param data - a void * pointer to any data type.  Data must be allocated on the heap.
 **/
-Node* initializeNode(void* data);
+Node* initializeNode(void* data) {
+    Node *toReturn = malloc(sizeof(Node));
+
+    // initialize elements of the Node
+    toReturn->data = data;
+    toReturn->previous = NULL;
+    toReturn->next = NULL;
+
+    return toReturn;
+}
 
 
 
@@ -42,7 +70,22 @@ Node* initializeNode(void* data);
 *@param list pointer to the List struct
 *@param toBeAdded - a pointer to data that is to be added to the linked list
 **/
-void insertFront(List* list, void* toBeAdded);
+void insertFront(List* list, void* toBeAdded) {
+    Node *toInsert = initializeNode(toBeAdded);
+
+    toInsert->next = list->head;
+
+    // if the list is not empty, the current head node must be updated
+    if (list->head) {
+        list->head->previous = toInsert;
+    } else {
+        // the list is empty, meaning the new node is also the tail
+        list->tail = toInsert;
+    }
+
+    list->head = toInsert;
+    list->length += 1;
+}
 
 
 
@@ -52,7 +95,22 @@ void insertFront(List* list, void* toBeAdded);
 *@param list pointer to the List struct
 *@param toBeAdded - a pointer to data that is to be added to the linked list
 **/
-void insertBack(List* list, void* toBeAdded);
+void insertBack(List* list, void* toBeAdded) {
+    Node *toInsert = initializeNode(toBeAdded);
+
+    toInsert->previous = list->tail;
+
+    // if the list is not empty, the current tail node must be updated
+    if (list->tail) {
+        list->tail->next = toInsert;
+    } else {
+        // the list is empty, meaning the new node is also the head
+        list->head = toInsert;
+    }
+
+    list->tail = toInsert;
+    list->length += 1;
+}
 
 
 
@@ -61,7 +119,10 @@ void insertBack(List* list, void* toBeAdded);
 * @pre 'List' type must exist and be used in order to keep track of the linked list.
 * @param list pointer to the List struct
 **/
-void freeList(List* list);
+void freeList(List* list) {
+    clearList(list);
+    free(list);
+}
 
 /** Clears the list: frees the contents of the list - Node structs and data stored in them -
  * without deleting the List struct
@@ -71,7 +132,19 @@ void freeList(List* list);
  * @param list pointer to the List-type dummy node
  * @return  on success: NULL, on failure: head of list
 **/
-void clearList(List* list);
+void clearList(List* list) {
+    Node *toDelete;
+    ListIterator iter = createIterator(list);
+
+    while (iter.current) {
+        toDelete = iter.current;
+        // TODO iterate ...
+        list->deleteData(toDelete->data);
+        free(toDelete);
+    }
+
+    list->length = 0;
+}
 
 
 /** Uses the comparison function pointer to place the element in the
@@ -82,11 +155,28 @@ void clearList(List* list);
 *@param list - a pointer to the List struct
 *@param toBeAdded - a pointer to data that is to be added to the linked list
 **/
-void insertSorted(List* list, void* toBeAdded);
+void insertSorted(List* list, void* toBeAdded) {
+    Node *toInsert = initializeNode(toBeAdded);
+
+    ListIterator iter = createIterator(list);
+
+    while (iter.current) {
+        if (list->compare(toInsert->data, (iter.current)->data) > 0) {
+            // TODO iterate ...
+        } else {
+            // TODO check if toInsert will become the new head or tail
+            if (iter.current == list->head) {
+                // toInsert will become the new head
+            } else if (iter.current == list->tail) {
+                // toInsert will become the new tail
+            }
+        }
+    }
+}
 
 
 
-/** Removes data from from the list, deletes the node and frees the memory,
+/** Removes data from the list, deletes the node and frees the memory,
  * changes pointer values of surrounding nodes to maintain list structure.
  * returns the data
  * You can assume that the list contains no duplicates
@@ -105,7 +195,13 @@ void* deleteDataFromList(List* list, void* toBeDeleted);
  *@param list - a pointer to the List struct
  *@return pointer to the data located at the head of the list
  **/
-void* getFromFront(List* list);
+void* getFromFront(List* list) {
+    if (!(list->head)) {
+        return NULL;
+    }
+
+    return list->head->data;
+}
 
 
 
@@ -114,7 +210,13 @@ void* getFromFront(List* list);
  *@param list - a pointer to the List struct
  *@return pointer to the data located at the tail of the list
  **/
-void* getFromBack(List* list);
+void* getFromBack(List* list) {
+    if (!(list->tail)) {
+        return NULL;
+    }
+
+    return list->tail->data;
+}
 
 
 
@@ -135,7 +237,12 @@ char* toString(List* list);
  *@return The newly created iterator object.
  *@param list - pointer to the List struct to iterate over.
 **/
-ListIterator createIterator(List* list);
+ListIterator createIterator(List* list) {
+    ListIterator toReturn;
+    toReturn.current = list->head;
+
+    return toReturn;
+}
 
 
 /** Function that returns the next element of the list through the iterator.

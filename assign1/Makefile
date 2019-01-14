@@ -10,13 +10,10 @@
 CC = gcc
 FLAGS = -std=c11 -Wall -Wpedantic
 EXECFLAGS = -g
+VPATH = src:include:bin:..
+LIBS = CalendarParser.h LinkedListAPI.h Parsing.h Comparison.h
 
-# TODO shared libraries
-#all: list parser
 
-
-main: CalendarParser.h LinkedListAPI.h
-	$(CC) $(FLAGS) $(EXECFLAGS) -o main
 
 #############
 # Utilities #

@@ -1,0 +1,11 @@
+BEGIN:VCALENDAR
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:iCalendar Parser Test
+X-WR-TIMEZONE:America/Toronto
+X-WR-CALDESC:This is a useless calendar that has random\, meaningless event
+ s. It is to be used only for seeing what an iCalendar file looks like\, and
+  to practice parsing one.
+END:VCALENDAR
