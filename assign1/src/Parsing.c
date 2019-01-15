@@ -45,16 +45,24 @@ char *trimWhitespace(char *string) {
 
 
 /*
- *
+ * Conctenates src to the end of dest, removing dest's null terminator and replacing
+ * it with the first chracter of src. src's null terminator is kept, and it becomes
+ * the new end of the string. dest must have enough space to contain both strings!
+ * For best results, dest must be an initialized string, but it can be empty
+ * (i.e. just a null terminator).
+ * Returns a pointer to the resulting string in dest.
  */
-char *concat(char *string1, char *string2) {
-    // TODO find a way to concatenate 2 strings without returning a dynamically
-    // allocated string
+char *concat(char *dest, char *src) {
+    if (strlen(dest) == 0) {
+        return strcpy(dest, src);
+    }
+
+    return strcat(dest, src);
 }
 
 
 /*
- * Unfolds a single string containing the (CRLF)(single whitespace) sequence.
+ * Unfolds a single string containing zero or more (CRLF)(single whitespace) sequences.
  * The string must contain only 1 null-terminator, and it must be at
  * the very end of the fold.
  *
@@ -71,10 +79,14 @@ void unfold(char *foldedString) {
         } else {
             *overwrite = *foldedCopy;
             overwrite++;
+            foldedCopy++;
         }
     }
 
     *overwrite = '\0';
+
+    // an edge case where the last CRLF sequence was not properly removed
+    foldedString[strcspn(foldedString, "\r\n")] = '\0';
 }
 
 

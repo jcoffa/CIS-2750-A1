@@ -27,7 +27,7 @@ char *trimWhitespace(char *string);
 /*
  *
  */
-char *concat(char *string1, char *string2);
+char *concat(char *dest, char *src);
 
 /*
  * Unfolds a single string containing the (CRLF)(single whitespace) sequence.
