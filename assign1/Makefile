@@ -7,16 +7,27 @@
 #   Makefile                        #
 #####################################
 
+VPATH = src:include:bin
+
+LIBS = CalendarParser.h LinkedListAPI.h Parsing.h
+OUT = bin
+SRC = src
+INCL = include
+
 CC = gcc
-FLAGS = -std=c11 -Wall -Wpedantic
-EXECFLAGS = -g
-VPATH = src:include:bin:..
-LIBS = CalendarParser.h LinkedListAPI.h Parsing.h Comparison.h
+CFLAGS = -std=c11 -Wall -Wpedantic -I$(INCL) -g
 
+#all: list parser
 
+#list:
+
+#parser:
+
+main: main.c $(LIBS)
+	$(CC) $(CFLAGS) $(addprefix $(SRC)/,$(LIBS:.h=.c)) $(SRC)/main.c -o $(OUT)/main
 
 #############
 # Utilities #
 #############
 clean:
-	rm bin/* main
+	rm $(OUT)/* $(OUT)/main

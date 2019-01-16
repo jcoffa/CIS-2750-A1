@@ -9,7 +9,7 @@
 
 // FIXME NO PATHS IN INCLUDE STATEMENTS
 //       Use shared libraries after you figure out how to do that
-#include "../include/Parsing.h"
+#include "include/Parsing.h"
 
 // TODO write functions
 

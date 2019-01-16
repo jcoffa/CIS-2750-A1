@@ -9,8 +9,8 @@
 
 // FIXME NO PATHS IN INCLUDE STATEMENTS
 //       Use shared libraries after you figure out how to do that
-#include "../../LinkedListAPI.h"
-#include "../include/Parsing.h"
+#include "LinkedListAPI.h"
+#include "include/Parsing.h"
 
 /** Function to initialize the list metadata head with the appropriate function pointers.
 * This function verifies that its arguments are not NULL, allocates a new List struct, and initializes it using

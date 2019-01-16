@@ -9,9 +9,9 @@
 
 // FIXME NO PATHS IN INCLUDE STATEMENTS
 //       Use shared libraries after you figure out how to do that
-#include "../../CalendarParser.h"
-#include "../../LinkedListAPI.h"
-#include "../include/Parsing.h"
+#include "CalendarParser.h"
+#include "LinkedListAPI.h"
+#include "include/Parsing.h"
 
 /** Function to create a Calendar object based on the contents of an iCalendar file.
  *@pre File name cannot be an empty string or NULL.  File name must have the .ics extension.

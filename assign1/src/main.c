@@ -9,9 +9,9 @@
 
 // FIXME NO PATHS IN INCLUDE STATEMENTS
 //       Use shared libraries after you figure out how to do that
-#include "../../CalendarParser.h"
-#include "../../LinkedListAPI.h"
-#include "../include/Parsing.h"
+#include "CalendarParser.h"
+#include "LinkedListAPI.h"
+#include "include/Parsing.h"
 
 int main() {
     // TODO test functions
