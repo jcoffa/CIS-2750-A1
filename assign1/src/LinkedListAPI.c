@@ -10,6 +10,7 @@
 // FIXME NO PATHS IN INCLUDE STATEMENTS
 //       Use shared libraries after you figure out how to do that
 #include "../../LinkedListAPI.h"
+#include "../include/Parsing.h"
 
 /** Function to initialize the list metadata head with the appropriate function pointers.
 * This function verifies that its arguments are not NULL, allocates a new List struct, and initializes it using
@@ -120,6 +121,7 @@ void insertBack(List* list, void* toBeAdded) {
 * @param list pointer to the List struct
 **/
 void freeList(List* list) {
+    // FIXME this leaks memory, most likely due to the clearList() function
     clearList(list);
     free(list);
 }
@@ -138,7 +140,7 @@ void clearList(List* list) {
 
     while (iter.current) {
         toDelete = iter.current;
-        // TODO iterate ...
+        nextElement(&iter);
         list->deleteData(toDelete->data);
         free(toDelete);
     }
@@ -227,7 +229,27 @@ returned string must be freed by the calling function.
  *@param list - a pointer to the List struct
  *@return on success: char * to string representation of list (must be freed after use).  on failure: NULL
  **/
-char* toString(List* list);
+char* toString(List* list) {
+    // TODO untested
+    char *toReturn = malloc(1000);
+    strcpy(toReturn, "");
+
+    ListIterator iter = createIterator(list);
+
+    // concatenate all the list elements together in one string
+    while (iter.current) {
+        concat(toReturn, (char *)nextElement(&iter));
+        concat(toReturn, ", ");
+    }
+
+    // remove the last comma at the end of the list
+    char *lastComma = strrchr(toReturn, ',');
+    if (lastComma) {
+        *lastComma = '\0';
+    }
+
+    return toReturn;
+}
 
 
 /** Function for creating an iterator for the linked list.
@@ -255,7 +277,12 @@ ListIterator createIterator(List* list) {
 *@return The data associated with the list element that the iterator pointed to when the function was called.
 *@param iter - a pointer to an iterator for a List struct.
 **/
-void* nextElement(ListIterator* iter);
+void* nextElement(ListIterator* iter) {
+    void *toReturn = iter->current->data;
+
+    iter->current = iter->current->next;
+    return toReturn;
+}
 
 
 /**Returns the number of elements in the list.
@@ -263,7 +290,13 @@ void* nextElement(ListIterator* iter);
  *@param list - a pointer to the List struct.
  *@return on success: number of elements in the list (0 or more).  on failure: -1 (e.g. list not initlized correctly)
  **/
-int getLength(List* list);
+int getLength(List* list) {
+    if (list->length >= 0) {
+        return list->length;
+    }
+
+    return -1;
+}
 
 
 /** Function that searches for an element in the list using a comparator function.

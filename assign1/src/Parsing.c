@@ -64,7 +64,9 @@ char *concat(char *dest, char *src) {
 /*
  * Unfolds a single string containing zero or more (CRLF)(single whitespace) sequences.
  * The string must contain only 1 null-terminator, and it must be at
- * the very end of the fold.
+ * the very end of the string (as expected). If multiple null-terminated lines are strung
+ * together without the middle null-terminator(s) removed, this function will only
+ * remove folds up until the first null-terminator.
  *
  * Refer to page 9 of the RFC5545 iCal specification for more information on
  * folding and unfolding.
@@ -74,19 +76,27 @@ void unfold(char *foldedString) {
     char *overwrite = foldedString;
 
     while (*foldedCopy != '\0') {
-        if (*foldedCopy == '\r') {    // a fold is starting
-            foldedCopy += 3; // skip over the \r, the \n, and the whitespace character
+        if (*foldedCopy == '\r' && *(foldedCopy+1) == '\n') {    // a fold is starting
+            foldedCopy += 2; // skip over the \r and the \n
+
+            // The next character should be either whitespace, or a null-terminator.
+            // We only want to increment this pointer if it is whitespace.
+            if (isspace(*foldedCopy)) {
+                foldedCopy += 1;
+            }
         } else {
+            // The current character is not indicative of a fold, so it
+            // is copied into the passed string.
             *overwrite = *foldedCopy;
+
+            // prepare to look at the next character
             overwrite++;
             foldedCopy++;
         }
     }
 
+    // all folds have been dealt with, the string is terminated
     *overwrite = '\0';
-
-    // an edge case where the last CRLF sequence was not properly removed
-    foldedString[strcspn(foldedString, "\r\n")] = '\0';
 }
 
 

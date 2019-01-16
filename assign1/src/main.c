@@ -49,27 +49,27 @@ int main() {
 
 
     printf("\n----------UNFOLDING----------\n");
-    char fold1[] = "This line ha\r\n s some folds in i\r\n t!";
+    char fold1[] = "This line ha\r\n s some folds in i\r\n t!\r\n";
     char fold2[] = "This line doesn't have any whatsoever.";
-    char fold3[] = "This one has\r\n  a fold immediately preceding a space! Tricky...";
-    char fold4[] = "Thi\r\n s one has lots\r\n  of folds \r\n in it!";
+    char fold3[] = "This one has\r\n  a fold immediately preceding a space! Tricky...\r\n";
+    char fold4[] = "Thi\r\n s one has lots\r\n  of folds \r\n in it!\r\n";
 
-    printf("FOLDED: \"%s\"\n", fold1);
+    printf("FOLDED:\n\"%s\"\n", fold1);
     unfold(fold1);
     printf("UNFOLDED: \"%s\"\n", fold1);
     printf("~~~~~~~~~~\n");
    
-    printf("FOLDED: \"%s\"\n", fold2);
+    printf("FOLDED:\n\"%s\"\n", fold2);
     unfold(fold2);
     printf("UNFOLDED: \"%s\"\n", fold2);
     printf("~~~~~~~~~~\n");
 
-    printf("FOLDED: \"%s\"\n", fold3);
+    printf("FOLDED:\n\"%s\"\n", fold3);
     unfold(fold3);
     printf("UNFOLDED: \"%s\"\n", fold3);
     printf("~~~~~~~~~~\n");
 
-    printf("FOLDED: \"%s\"\n", fold4);
+    printf("FOLDED:\n\"%s\"\n", fold4);
     unfold(fold4);
     printf("UNFOLDED: \"%s\"\n", fold4);
 
@@ -79,7 +79,7 @@ int main() {
 
     printf("\n----------UNFOLDING AN ICAL PROPERTY ACROSS MULTIPLE LINES----------\n");
     char buffer[80];
-    char toPrint[200];
+    char toPrint[200] = "";
 
     printf("~~~~~~~~~~ NEW FILE ~~~~~~~~~\n");
     while (fgets(buffer, 64, desc1)) {
@@ -136,13 +136,20 @@ int main() {
 
     printf("\n----------CREATE CALENDAR----------\n");
     Calendar *newCalendar;
-    createCalendar("newCalendar.ics", &newCalendar);
+    ICalErrorCode error = createCalendar("newCalendar.ics", &newCalendar);
+    if (error == OK) {
+        char *humanReadable = printCalendar(newCalendar);
+        printf("\nCalendar created from file 'newCalendar.ics':\"%s\"\n", humanReadable);
+        free(humanReadable);
 
-    char *humanReadable = printCalendar(newCalendar);
-    printf("\nCalendar created from file 'newCalendar.ics':\"%s\"\n", humanReadable);
-    free(humanReadable);
-
-    deleteCalendar(newCalendar);
+        deleteCalendar(newCalendar);
+    } else {
+        char *errorStr = printError(error);
+        printf("Something went wrong when reading \"newCalendar.ics\": %s\n", errorStr);
+        free(errorStr);
+    }
+    // TODO calendar memory is freed correctly when there are no lists malloc'd.
+    // Once lists are initialized, memory is leaked.
     
 
 
@@ -166,6 +173,27 @@ int main() {
     printf("\"This is a test\" and \"q\" = %d\n", endsWith("This is a test", "q"));
     printf("\"This is a test\" and \"But this one is much much longer\" = %d\n", endsWith("This is a test", "But this one is much much longer"));
     printf("\"This is a test\" and \"\" = %d\n", endsWith("This is a test", ""));
+
+
+
+
+
+    printf("\n----------PRINT FUNCTIONS----------\n");
+    char *toBePrinted = printEvent("");
+    printf("printEvent = %s\n", toBePrinted);
+    free(toBePrinted);
+
+    toBePrinted = printAlarm("");
+    printf("printAlarm = %s\n", toBePrinted);
+    free(toBePrinted);
+
+    toBePrinted = printProperty("");
+    printf("printProperty = %s\n", toBePrinted);
+    free(toBePrinted);
+
+    toBePrinted = printDate("");
+    printf("printDate = %s\n", toBePrinted);
+    free(toBePrinted);
 
     return EXIT_SUCCESS;
 }
