@@ -7,11 +7,9 @@
  *  CalendarParser.c                *
  ************************************/
 
-// FIXME NO PATHS IN INCLUDE STATEMENTS
-//       Use shared libraries after you figure out how to do that
 #include "CalendarParser.h"
 #include "LinkedListAPI.h"
-#include "include/Parsing.h"
+#include "Parsing.h"
 
 /** Function to create a Calendar object based on the contents of an iCalendar file.
  *@pre File name cannot be an empty string or NULL.  File name must have the .ics extension.
@@ -129,7 +127,6 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
  *@param obj - a pointer to a Calendar struct
 **/
 void deleteCalendar(Calendar* obj) {
-    // FIXME this leaks memory due to the freeList() functions
     freeList(obj->events);
     freeList(obj->properties);
     free(obj);
@@ -144,15 +141,15 @@ void deleteCalendar(Calendar* obj) {
 **/
 char* printCalendar(const Calendar* obj) {
     char *toReturn = malloc(2000);
-    //char *eventListStr = toString(obj->events);
-    //char *propertyListStr = toString(obj->properties);
+    char *eventListStr = toString(obj->events);
+    char *propertyListStr = toString(obj->properties);
 
     // A neat little function I found that allows for string creation using printf
     // format specifiers. Makes stringing information together in a string like this
     // much easier than using strcat() repeatedly!
-    //snprintf(toReturn, 2000, "Calendar: {VERSION=%.2f, PRODID=%s, EVENTS={%s}, PROPERTIES={%s}}", \
-    //         obj->version, obj->prodID, eventListStr, propertyListStr);
-    snprintf(toReturn, 2000, "Calendar: {VERSION=%.2f, PRODID=%s}", obj->version, obj->prodID);
+    snprintf(toReturn, 2000, "Calendar: {VERSION=%.2f, PRODID=%s, EVENTS={%s}, PROPERTIES={%s}}", \
+             obj->version, obj->prodID, eventListStr, propertyListStr);
+    //snprintf(toReturn, 2000, "Calendar: {VERSION=%.2f, PRODID=%s}", obj->version, obj->prodID);
 
     // TODO get strings from event and properties Lists, save them both
     // into variables, concatenate them to the main string, and then
@@ -160,8 +157,8 @@ char* printCalendar(const Calendar* obj) {
     // I've tested it out, and freeing a dynamically allocated string after
     // it has been concatenated onto another string is safe, correctly
     // frees the memory, and does not break the newly concatenated string.
-    //free(eventListStr);
-    //free(propertyListStr);
+    free(eventListStr);
+    free(propertyListStr);
 
     toReturn = realloc(toReturn, strlen(toReturn) + 1);
     return toReturn;
