@@ -29,5 +29,8 @@ main: main.c $(LIBS)
 #############
 # Utilities #
 #############
+run:
+	./bin/main
+
 clean:
 	rm $(OUT)/* $(OUT)/main
