@@ -15,8 +15,7 @@
 LIBS = CalendarParser.h LinkedListAPI.h Parsing.h
 
 # directory names and paths
-vpath %.h $(INCL)	# *.h files are searched for in $(INCL) if not found in current directory
-vpath %.c $(SRC)	# *.c files are searchd for in $(SRC) if not found in current directory
+VPATH = src:include:bin
 OUT = bin
 SRC = src
 INCL = include
@@ -50,7 +49,7 @@ main: main.c $(LIBS)
 # make and run the main executable
 run:
 	$(MAKE) main
-	valgrind --leak-check=full --trace-origins=yes --show-leak-kinds=all -v ./$(OUT)/main
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all -v ./$(OUT)/main
 
 # removes all .o and .so files, and the main executable
 clean:
