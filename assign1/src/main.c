@@ -210,6 +210,12 @@ int main() {
 
     printf("\n\n\n----------LIST TESTING----------\n");
     printf("----------EVENT LIST----------\n");
+    char *eventPrint;
+    List *eventList = initializeList(printEvent, deleteEvent, compareEvents);
+    insertFront(eventList, "This is a test");
+    eventPrint = toString(eventList);
+    printf("After one added to the front: \"%s\"\n", eventPrint);
+    free(eventPrint);
 
 
     return EXIT_SUCCESS;
