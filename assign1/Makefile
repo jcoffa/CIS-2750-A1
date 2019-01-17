@@ -49,7 +49,7 @@ main: main.c $(LIBS)
 # make and run the main executable
 run:
 	$(MAKE) main
-	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all -v ./$(OUT)/main
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(OUT)/main
 
 # removes all .o and .so files, and the main executable
 clean:
