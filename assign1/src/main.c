@@ -216,6 +216,7 @@ int main() {
     eventPrint = toString(eventList);
     printf("After one added to the front: \"%s\"\n", eventPrint);
     free(eventPrint);
+    freeList(eventList);
 
 
     return EXIT_SUCCESS;
