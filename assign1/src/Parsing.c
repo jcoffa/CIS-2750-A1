@@ -7,6 +7,8 @@
  *  Parsing.c                       *
  ************************************/
 
+#include <stdio.h>
+
 #include "Parsing.h"
 
 // TODO write functions
@@ -50,7 +52,7 @@ char *trimWhitespace(char *string) {
  * (i.e. just a null terminator).
  * Returns a pointer to the resulting string in dest.
  */
-char *concat(char *dest, char *src) {
+char *concat(char *dest, const char *src) {
     if (strlen(dest) == 0) {
         return strcpy(dest, src);
     }
@@ -119,5 +121,24 @@ bool endsWith(const char *string, const char *end) {
     }
 
     return strncmp(string + lengthString - lengthEnd, end, lengthEnd) == 0;
+}
+
+
+void strUpper(char *string) {
+    char *iter = string;
+
+    while (*iter) {
+        *iter = toupper((unsigned char) *iter);
+        iter += 1;
+    }
+}
+
+
+char *strUpperCopy(const char *string) {
+    char *toReturn = malloc(strlen(string) + 1);
+
+    strcpy(toReturn, string);
+    strUpper(toReturn);
+    return toReturn;
 }
 

@@ -12,6 +12,7 @@
 #include "Parsing.h"
 
 int main() {
+    /*
     printf("----------WHITESPACE TRIMMING----------\n");
     char s1[] = "   This has spaces.   ";
     char s2[] = "\tThis has a tab at the front, and also\there and after this\t";
@@ -20,11 +21,13 @@ int main() {
     printf("\"%s\" -> \"%s\"\n", s1, trimWhitespace(s1));
     printf("\"%s\" -> \"%s\"\n", s2, trimWhitespace(s2));
     printf("\"%s\" -> \"%s\"\n", s3, trimWhitespace(s3));
+    */
 
 
 
 
 
+    /*
     printf("\n----------CONCATENATION----------\n");
     char concatenated[200] = "";
     concat(concatenated, "This is the start of a concatenated string."); //  43
@@ -35,11 +38,13 @@ int main() {
 
     concat(concatenated, " You fool! You must add in the space yourself!"); // 46
     printf("\"%s\"\n", concatenated);
+    */
 
 
 
 
 
+    /*
     printf("\n----------UNFOLDING----------\n");
     char fold1[] = "This line ha\r\n s some folds in i\r\n t!\r\n";
     char fold2[] = "This line doesn't have any whatsoever.";
@@ -64,6 +69,7 @@ int main() {
     printf("FOLDED:\n\"%s\"\n", fold4);
     unfold(fold4);
     printf("UNFOLDED: \"%s\"\n", fold4);
+    */
 
 
 
@@ -204,6 +210,19 @@ int main() {
     free(toBePrinted);
 
 
+
+
+
+    printf("\n----------TOUPPER FUNCTIONS----------\n");
+    char randCase[] = "ThiS CaSE is RandoM. HOPEFUllY thE FuncTioN WorKS ThIS TImE!";
+    printf("Before: \"%s\"\n", randCase);
+    strUpper(randCase);
+    printf("After: \"%s\"\n", randCase);
+
+    char randCase2[] = "But WhaT If we MalloC() the StriNg insTEAD?";
+    char *returnedRandCase = strUpperCopy(randCase2);
+    printf("\nrandCase2: \"%s\"\nreturnedRandCase: \"%s\"", randCase2, returnedRandCase);
+    free(returnedRandCase);
 
 
 
