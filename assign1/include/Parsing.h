@@ -15,9 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO write functions
-
-
 /*
  * Removes all leading and trailing whitespace from the given string.
  * Returns the updated string.
@@ -27,7 +24,7 @@ char *trimWhitespace(char *string);
 /*
  *
  */
-char *concat(char *dest, char *src);
+char *concat(char *dest, const char *src);
 
 /*
  * Unfolds a single string containing the (CRLF)(single whitespace) sequence.
@@ -42,4 +39,15 @@ void unfold(char *foldedString);
 bool startsWith(const char *string, const char *start);
 
 bool endsWith(const char *string, const char *end);
+
+/*
+ * Converts every character in string to uppercase, and returns a pointer to it.
+ */
+void strUpper(char *string);
+
+/*
+ * Creates a dynamically allocated copy of string, and converts every character in the copy
+ * to uppercase before returning a pointer to the new copy. It must be freed by the caller.
+ */
+char *strUpperCopy(const char *string);
 #endif // PARSING_H
