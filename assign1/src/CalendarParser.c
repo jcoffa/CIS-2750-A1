@@ -47,8 +47,13 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     (*obj)->events = initializeList(printEvent, deleteEvent, compareEvents);
     (*obj)->properties = initializeList(printProperty, deleteProperty, compareProperties);
 
-    char line[90], buffer[1100] = "";
-    while (fgets(line, 90, fin)) {
+    // Most arrays in the various structures used in this program have a maximum length of
+    // 1000 characters, so I'm assuming most lines won't go much longer than that (it is not
+    // guaranteed that all lines are folded at 75 chars, since the iCal speciifcation
+    // states that line folding is only recommended, and not a requirement.
+    char line[1100], buffer[1100] = "";
+
+    while (fgets(line, 1100, fin)) {
         printf("\tDEBUG: in createCalendar: version=%d, prodID=%d, method=%d\n", version, prodID, method);
         // TODO only operate on the second last line read, instead of the
         // most recent one (since folding has to be taken into account, and you don't
@@ -59,7 +64,11 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             // TODO concatenate, keep reading until one doesn't start with a space,
             // after which unfold the line and store the information where it needs to go.
             //concat(buffer, line + 1); // +1 to ignore leading space from the fold
-            printf("\tDEBUG: in cteayeCalendar: discovered line that is indicitive of a fold: \"%s\"\n", line);
+            printf("\tDEBUG: in createCalendar: discovered line that is indicitive of a fold: \"%s\"\n", line);
+            continue;
+        } else if (startsWith(line, ";")) {
+            // lines starting with a semicolon (;) are comments, and
+            // should be ignored
             continue;
         }
 
@@ -100,6 +109,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
             // TODO add property to the generic property List
+            
         }
     }
     
@@ -113,7 +123,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     }
     if (!version) {
         deleteCalendar(*obj);
-        return INV_PRODID;
+        return INV_VER;
     }
 
     return OK;
