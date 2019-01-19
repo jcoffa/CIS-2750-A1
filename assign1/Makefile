@@ -16,10 +16,10 @@ LIBS = CalendarParser.h LinkedListAPI.h Parsing.h
 SHARED = liblist.so libcal.so libparsing.so
 
 # directory names and paths
-VPATH = src:include:bin
-OUT = bin
 SRC = src
 INCL = include
+OUT = bin
+VPATH = $(SRC):$(INCLUDE):$(OUT)
 SEARCHDIRS := $(addprefix -I,$(INCL))	# Search for libraries in all include (INCL) directories
 
 # compilation options
