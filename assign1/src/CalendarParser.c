@@ -24,6 +24,7 @@
  *@param a double pointer to a Calendar struct that needs to be allocated
 **/
 ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
+    Calendar *cal = *obj;   // one less * I have to remember to type
     FILE *fin;
     bool version, prodID, method;
     version = prodID = method = false;
@@ -43,63 +44,51 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     }
 
     // initialize the Calendar object
-    *obj = malloc(sizeof(Calendar));
-    (*obj)->events = initializeList(printEvent, deleteEvent, compareEvents);
-    (*obj)->properties = initializeList(printProperty, deleteProperty, compareProperties);
+    cal = malloc(sizeof(Calendar));
+    cal->events = initializeList(printEvent, deleteEvent, compareEvents);
+    cal->properties = initializeList(printProperty, deleteProperty, compareProperties);
 
     // Most arrays in the various structures used in this program have a maximum length of
     // 1000 characters, so I'm assuming most lines won't go much longer than that (it is not
     // guaranteed that all lines are folded at 75 chars, since the iCal speciifcation
     // states that line folding is only recommended, and not a requirement.
-    char line[1100], buffer[1100] = "";
+    char line[2000];
 
-    while (fgets(line, 1100, fin)) {
+    while (!feof(fin)) {
         printf("\tDEBUG: in createCalendar: version=%d, prodID=%d, method=%d\n", version, prodID, method);
-        // TODO only operate on the second last line read, instead of the
-        // most recent one (since folding has to be taken into account, and you don't
-        // know if a line is folded until you read the next line).
-        // If the most recent line read is folded, and the one before it wasn't,
-        // it is now known where the fold starts.
-        if (startsWith(line, " ")) {
-            // TODO concatenate, keep reading until one doesn't start with a space,
-            // after which unfold the line and store the information where it needs to go.
-            //concat(buffer, line + 1); // +1 to ignore leading space from the fold
-            printf("\tDEBUG: in createCalendar: discovered line that is indicitive of a fold: \"%s\"\n", line);
-            continue;
-        } else if (startsWith(line, ";")) {
+        readFold(line, 2000, fin);
+        
+        if (startsWith(line, ";")) {
             // lines starting with a semicolon (;) are comments, and
             // should be ignored
             continue;
         }
-
-        // TODO handle that whole 'fold' nonsense described in the comment above
-        // unfold(buffer);
         
         if (startsWith(line, "VERSION:")) {
             if (version) {
-                deleteCalendar(*obj);
+                deleteCalendar(cal);
                 return DUP_VER;
             }
 
             printf("DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
             // +8 to start conversion after the 'VERSION:' part of the string
-            (*obj)->version = strtof(trimWhitespace(line + 8), NULL);
-            printf("DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
+            cal->version = strtof(trimWhitespace(line + 8), NULL);
+            printf("DEBUG: in createCalendar: set version to %f\n", cal->version);
             version = true;
         } else if (startsWith(line, "PRODID:")) {
             if (prodID) {
-                deleteCalendar(*obj);
+                deleteCalendar(cal);
                 return DUP_PRODID;
             }
 
             // +7 to only copy characters past 'PRODID:' part of the string
             printf("DEBUG: in createCalendar: found PRODID line: \"%s\"\n", line);
-            strcpy((*obj)->prodID, line + 7);
-            printf("DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
+            strcpy(cal->prodID, line + 7);
+            printf("DEBUG: in createCalendar: set product ID to\"%s\"\n", cal->prodID);
             prodID = true;
         } else if (startsWith(line, "METHOD:")) {
             if (method) {
-                deleteCalendar(*obj);
+                deleteCalendar(cal);
                 return OTHER_ERROR;
             }
 
@@ -109,7 +98,6 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
             // TODO add property to the generic property List
-            
         }
     }
     
@@ -118,14 +106,16 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     // A calendar object requires a ProductID and a Version number.
     // If the file does not have one, it is invalid.
     if (!prodID) {
-        deleteCalendar(*obj);
+        deleteCalendar(cal);
         return INV_PRODID;
     }
     if (!version) {
-        deleteCalendar(*obj);
+        deleteCalendar(cal);
         return INV_VER;
     }
 
+    // the file has been parsed, mandatory properties have been found,
+    // and the calendar is valid
     return OK;
 }
 
@@ -157,21 +147,13 @@ char* printCalendar(const Calendar* obj) {
     // A neat little function I found that allows for string creation using printf
     // format specifiers. Makes stringing information together in a string like this
     // much easier than using strcat() repeatedly!
-    snprintf(toReturn, 2000, "Calendar: {VERSION=%.2f, PRODID=%s, EVENTS={%s}, PROPERTIES={%s}}", \
+    snprintf(toReturn, 2000, "Calendar: {VERSION=%.2f, PRODID=%s, EVENTS={%s\n} End EVENTS, PROPERTIES={%s\n} End PROPERTIES}", \
              obj->version, obj->prodID, eventListStr, propertyListStr);
-    //snprintf(toReturn, 2000, "Calendar: {VERSION=%.2f, PRODID=%s}", obj->version, obj->prodID);
 
-    // TODO get strings from event and properties Lists, save them both
-    // into variables, concatenate them to the main string, and then
-    // free the event and property List string variables.
-    // I've tested it out, and freeing a dynamically allocated string after
-    // it has been concatenated onto another string is safe, correctly
-    // frees the memory, and does not break the newly concatenated string.
     free(eventListStr);
     free(propertyListStr);
 
-    toReturn = realloc(toReturn, strlen(toReturn) + 1);
-    return toReturn;
+    return realloc(toReturn, strlen(toReturn) + 1);
 }
 
 
@@ -260,8 +242,18 @@ ICalErrorCode validateCalendar(const Calendar* obj);
 /*
  */
 void deleteEvent(void* toBeDeleted) {
-    // TODO
-    printf("\tDEBUG: deleteEvent is unimplemented\n");
+    if (!toBeDeleted) {
+        return;
+    }
+
+    Event *ev = (Event *)toBeDeleted;
+
+    // DateTime objects don't need to be freed (they aren't
+    // stored as pointers in an Event struct)
+    freeList(ev->properties);
+    freeList(ev->alarms);
+
+    free(ev);
 }
 
 /*
@@ -275,10 +267,30 @@ int compareEvents(const void* first, const void* second) {
 /*
  */
 char* printEvent(void* toBePrinted) {
-    // TODO
-    printf("\tDEBUG: printEvent is unimplemented\n");
-    char *toReturn = malloc(50);
-    strcpy(toReturn, "printEvent - TODO");
+    if (!toBePrinted) {
+        return NULL;
+    }
+
+    Event *ev = (Event *)toBePrinted;
+
+    // DateTime's and Lists have their own print functions
+    char *createStr = printDate(&(ev->creationDateTime));
+    char *startStr = printDate(&(ev->startDateTime));
+    char *propsStr = toString(ev->properties);
+    char *alarmsStr = toString(ev->alarms);
+
+    int length = strlen(createStr) + strlen(startStr) + strlen(propsStr) + strlen(alarmsStr) + 130;
+    char *toReturn = malloc(length);
+
+    snprintf(toReturn, length, "EventUID: \"%s\", EventCreate: \"%s\", EventStart: \"%s\", EventProps: \"%s\", EventAlarms: \"%s\"", \
+             ev->UID, createStr, startStr, propsStr, alarmsStr);
+
+    // Free dynamically allocated print strings
+    free(createStr);
+    free(startStr);
+    free(propsStr);
+    free(alarmsStr);
+
     return realloc(toReturn, strlen(toReturn) + 1);
 }
 
@@ -286,8 +298,16 @@ char* printEvent(void* toBePrinted) {
 /*
  */
 void deleteAlarm(void* toBeDeleted) {
-    // TODO
-    printf("\tDEBUG: deleteAlarms is unimplemented\n");
+    if (!toBeDeleted) {
+        return;
+    }
+
+    Alarm *al = (Alarm *)toBeDeleted;
+
+    free(al->trigger);
+    freeList(al->properties);
+
+    free(al);
 }
 
 /*
@@ -301,10 +321,24 @@ int compareAlarms(const void* first, const void* second) {
 /*
  */
 char* printAlarm(void* toBePrinted) {
-    // TODO
-    printf("\tDEBUG: printAlarm is unimplemented\n");
-    char *toReturn = malloc(50);
-    strcpy(toReturn, "printAlarm - TODO");
+    if (!toBePrinted) {
+        return NULL;
+    }
+
+    Alarm *al = (Alarm *)toBePrinted;
+
+    // Lists have their own print function
+    char *props = toString(al->properties);
+
+    int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 80;
+    char *toReturn = malloc(length);
+
+    snprintf(toReturn, length, "AlarmAction: \"%s\", AlarmTrigger: \"%s\", AlarmProps: \"%s\"", \
+             al->action, al->trigger, props);
+
+    // Free dynamically allocated print string
+    free(props);
+
     return realloc(toReturn, strlen(toReturn) + 1);
 }
 
@@ -312,8 +346,12 @@ char* printAlarm(void* toBePrinted) {
 /*
  */
 void deleteProperty(void* toBeDeleted) {
-    // TODO
-    printf("\tDEBUG: deleteProperty is unimplemented\n");
+    // Properties are alloc'd in one block and none of their
+    // members needs to be freed in any special way, so no
+    // type casting or calling other functions is necessary
+    if (toBeDeleted) {
+        free(toBeDeleted);
+    }
 }
 
 /*
@@ -323,13 +361,21 @@ int compareProperties(const void* first, const void* second) {
     printf("\tDEBUG: compareProperties is unimplemented\n");
     return 0;
 }
+
 /*
  */
 char* printProperty(void* toBePrinted) {
-    // TODO
-    printf("\tDEBUG: printProperty is unimplemented\n");
-    char *toReturn = malloc(50);
-    strcpy(toReturn, "printProperty - TODO");
+    if (!toBePrinted) {
+        return NULL;
+    }
+
+    Property *prop = (Property *)toBePrinted;
+
+    int length = strlen(prop->propDescr) + 100;
+    char *toReturn = malloc(length);
+
+    snprintf(toReturn, length, "PropName: \"%s\", PropDescr: \"%s\"", prop->propName, prop->propDescr);
+
     return realloc(toReturn, strlen(toReturn) + 1);
 }
 
@@ -337,8 +383,12 @@ char* printProperty(void* toBePrinted) {
 /*
  */
 void deleteDate(void* toBeDeleted) {
-    // TODO
-    printf("\tDEBUG: deleteDate is unimplemented\n");
+    // DateTimes are alloc'd in one block and none of their
+    // members needs to be freed in any special way, so no
+    // type casting or calling other functions is necessary
+    if (toBeDeleted) {
+        free(toBeDeleted);
+    }
 }
 
 /*
@@ -352,9 +402,19 @@ int compareDates(const void* first, const void* second) {
 /*
  */
 char* printDate(void* toBePrinted) {
-    // TODO
-    printf("\tDEBUG: printDate is unimplemented\n");
-    char *toReturn = malloc(50);
-    strcpy(toReturn, "printDate - TODO");
+    if (!toBePrinted) {
+        return NULL;
+    }
+
+    DateTime *dt = (DateTime *)toBePrinted;
+
+    // 9 chars for date,+ 7 for time, + 70 for rest of string = 86 bytes, round to 90
+    int length = 90;
+    char *toReturn = malloc(length);
+
+    snprintf(toReturn, length, "Date (YYYYMMDD): \"%s\", Time (HHMMSS): \"%s\", UTC?: %s", \
+             dt->date, dt->time, (dt->UTC) ? "Yes" : "No");
+
     return realloc(toReturn, strlen(toReturn) + 1);
 }
+
