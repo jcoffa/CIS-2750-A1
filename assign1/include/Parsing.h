@@ -10,6 +10,7 @@
 #ifndef PARSING_H
 #define PARSING_H
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -50,4 +51,17 @@ void strUpper(char *string);
  * to uppercase before returning a pointer to the new copy. It must be freed by the caller.
  */
 char *strUpperCopy(const char *string);
+
+
+/*
+ * Reads in at most 'size' bytes from 'fp' and stores it in the buffer pointed to by 'unfolded'.
+ * Continually reads lines as long as folded lines are encountered. Stops when a line
+ * without a fold is read, or if the end of the file is reached.
+ * Folded lines are concatenated together, and then unfolded to make one single line with no
+ * CRLF(whitesapce) sequences.
+ * 'unfold' must be large enough to hold the entire string.
+ *
+ * Returns the unfolded line.
+ */
+char *readFold(char *unfolded, int size, FILE *fp);
 #endif // PARSING_H

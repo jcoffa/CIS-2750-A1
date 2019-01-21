@@ -142,3 +142,46 @@ char *strUpperCopy(const char *string) {
     return toReturn;
 }
 
+/*
+ * Reads in at most 'size' bytes from 'fp' and stores it in the buffer pointed to by 'unfolded'.
+ * Continually reads lines as long as folded lines are encountered. Stops when a line
+ * without a fold is read, or if the end of the file is reached.
+ * Folded lines are concatenated together, and then unfolded to make one single line with no
+ * CRLF(whitesapce) sequences.
+ * 'unfold' must be large enough to hold the entire string.
+ *
+ * Returns the unfolded line.
+ */
+char *readFold(char *unfolded, int size, FILE *fp) {
+    char buf[size];
+    bool foundFold = false;
+    int sizeLeft = size;
+    int bufLength;
+
+    // clear 'unfolded' for more reliable concatenation
+    strcpy(unfolded, "");
+
+    while (fgets(buf, sizeLeft, fp)) {
+        bufLength = strlen(buf);
+        sizeLeft -= bufLength;
+        // there were folded lines, but then a non-folded line was found
+        // (i.e. end of fold was found)
+        if (foundFold && !isspace(buf[0])) {
+            // return to the previous line
+            fseek(fp, -bufLength, SEEK_CUR);
+            break;
+        }
+
+        // the line must have begun with a space, meaning there is a fold present
+        concat(unfolded, buf);
+        foundFold = true;
+    }
+
+    if (sizeLeft <= 0) {
+        printf("\t--- ERROR --- readFold exceeded read size of %d characters\n", size);
+    }
+
+    unfold(unfolded);
+    return unfolded;
+}
+
