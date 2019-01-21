@@ -69,7 +69,7 @@ typedef struct ical {
 	char 	prodID[1000];
 	
 	//List of events associated with the event.  
-	//All objects in the list will be of type Alarm.  It must not be NULL.  It must not be empty.
+	//All objects in the list will be of type Event.  It must not be NULL.  It must not be empty.
 	List* events;
     
 	//Additional calendar properties.  
