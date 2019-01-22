@@ -12,7 +12,7 @@
 #############
 
 # files
-LIBS = CalendarParser.h LinkedListAPI.h Parsing.h
+LIBS = CalendarParser.h LinkedListAPI.h Parsing.h Initialize.h
 SHARED = liblist.so libcal.so libparsing.so
 
 # directory names and paths
