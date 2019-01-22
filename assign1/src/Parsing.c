@@ -150,7 +150,7 @@ char *strUpperCopy(const char *string) {
  * CRLF(whitesapce) sequences.
  * 'unfold' must be large enough to hold the entire string.
  *
- * Returns the unfolded line.
+ * Returns the unfolded line after removing all leading and trailing whitespace characters..
  */
 char *readFold(char *unfolded, int size, FILE *fp) {
     char buf[size];
@@ -182,6 +182,97 @@ char *readFold(char *unfolded, int size, FILE *fp) {
     }
 
     unfold(unfolded);
-    return unfolded;
+    return trimWhitespace(unfolded);
+}
+
+
+ICalErrorCode getEvent(FILE *fp, Event **event) {
+    char line[2000];
+    bool dtStamp, dtStart, UID;
+    dtStamp = dtStart = UID = false;
+
+    *event = newEvent();
+
+    while (strcmp(readFold(line, 20000, fp), "END:VEVENT") != 0 && !feof(fp)) {
+        if (startsWith(line, ";")) {
+            // lines that start with ';' are comments and should be ignored
+            continue;
+        } else if (startsWith(line, "DTSTAMP")) {
+            // creation date of alarm
+            if (dtStamp) {
+                deleteEvent(*event);
+                return INV_EVENT;
+            }
+            dtStamp = true;
+
+            (*event)->creationDateTime = newDateTime(line + strcspn(line, ":;") + 1);
+        } else if (startsWith(line, "DTSTART")) {
+            // start of event
+            if (dtStart) {
+                deleteEvent(*event);
+                return INV_EVENT;
+            }
+            dtStart = true;
+
+            (*event)->startDateTime = newDateTime(line + strcspn(line, ":;") + 1);
+        } else if (startsWith(line, "UID")) {
+            if (UID) {
+                deleteEvent(*event);
+                return INV_EVENT;
+            }
+            UID = true;
+
+            strcpy((*event)->UID, line + 4);
+        } else if (startsWith(line, "BEGIN:VALARM")) {
+            Alarm *toAdd;
+            if (getAlarm(fp, &toAdd) == OK) {
+                 insertFront((*event)->alarms, (void *)toAdd);
+            } else {
+                return INV_ALARM;
+            }
+        } else {
+           insertFront((*event)->properties, (void *)newProperty(line));
+        }
+    }
+
+    return OK;
+}
+
+
+ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
+    char line[2000];
+    bool trigger, action;
+    trigger = action = false;
+
+    *alarm = newAlarm();
+
+    while (strcmp(readFold(line, 2000, fp), "END:VALARM") != 0 && !feof(fp)) {
+        if (startsWith(line, ";")) {
+            // lines that start with ';' are comments and should be ignored
+            continue;
+        } else if (startsWith(line, "TRIGGER")) {
+            // -8 for the characters in 'TRIGGER:', +1 for null terminator
+            if (trigger) {
+                deleteAlarm(*alarm);
+                return INV_ALARM;
+            }
+            trigger = true;
+
+            (*alarm)->trigger = malloc(strlen(line) - 7);
+            strcpy((*alarm)->trigger, line + 8);
+        } else if (startsWith(line, "ACTION")) {
+            if (action) {
+                deleteAlarm(*alarm);
+                return INV_ALARM;
+            }
+            action = true;
+
+            strcpy((*alarm)->action, line + 7);
+        } else {
+            insertFront((*alarm)->properties, (void *)newProperty(line));
+        }
+    }
+
+    return OK;
 }
 
