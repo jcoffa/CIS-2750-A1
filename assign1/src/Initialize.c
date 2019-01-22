@@ -8,6 +8,7 @@
  ************************************/
 
 #include "Initialize.h"
+#include "Parsing.h"
 
 /*
  * Creates a DateTime structure and populates it with data retrieved from the string 'line',
@@ -16,8 +17,18 @@
  * Returns the DateTime structure otherwise.
  */
 DateTime newDateTime(char *line) {
-    printf("newDateTime - TODO\n");
-    return NULL;
+    DateTime toReturn;
+
+    // everything before the "T" character is the date
+    strncpy(toReturn.date, line, 8);
+    toReturn.date[9] = '\0';
+
+    // the next 6 characters after the "T" character is the time
+    strncpy(toReturn.time, line + tIndex, 6);
+    toReturn.time[7] = '\0';
+
+    toReturn.UTC = (endsWith(line, "Z") || endsWith(line, "z"));
+    return toReturn;
 }
 
 /*
