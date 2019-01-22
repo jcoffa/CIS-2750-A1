@@ -10,6 +10,7 @@
 #include "CalendarParser.h"
 #include "LinkedListAPI.h"
 #include "Parsing.h"
+#include "Initialize.h"
 
 /** Function to create a Calendar object based on the contents of an iCalendar file.
  *@pre File name cannot be an empty string or NULL.  File name must have the .ics extension.
@@ -24,10 +25,9 @@
  *@param a double pointer to a Calendar struct that needs to be allocated
 **/
 ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
-    Calendar *cal = *obj;   // one less * I have to remember to type
     FILE *fin;
-    bool version, prodID, method;
-    version = prodID = method = false;
+    bool version, prodID, method, beginCal, endCal;
+    version = prodID = method = beginCal = endCal = false;
 
     // file must end with the .ics extension
     if (!endsWith(fileName, ".ics")) {
@@ -44,18 +44,15 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     }
 
     // initialize the Calendar object
-    cal = malloc(sizeof(Calendar));
-    cal->events = initializeList(printEvent, deleteEvent, compareEvents);
-    cal->properties = initializeList(printProperty, deleteProperty, compareProperties);
+    *obj = malloc(sizeof(Calendar));
+    (*obj)->events = initializeList(printEvent, deleteEvent, compareEvents);
+    (*obj)->properties = initializeList(printProperty, deleteProperty, compareProperties);
 
-    // Most arrays in the various structures used in this program have a maximum length of
-    // 1000 characters, so I'm assuming most lines won't go much longer than that (it is not
-    // guaranteed that all lines are folded at 75 chars, since the iCal speciifcation
-    // states that line folding is only recommended, and not a requirement.
     char line[2000];
 
     while (!feof(fin)) {
-        printf("\tDEBUG: in createCalendar: version=%d, prodID=%d, method=%d\n", version, prodID, method);
+        printf("\tDEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
+               version, prodID, method, beginCal, endCal);
         readFold(line, 2000, fin);
         
         if (startsWith(line, ";")) {
@@ -63,55 +60,78 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             // should be ignored
             continue;
         }
+
+        // The first non-commented line must be BEGIN:VCALENDAR
+        if (!beginCal && !startsWith(line, "BEGIN:VCALENDAR")) {
+            printf("DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
+            deleteCalendar(*obj);
+            return INV_CAL;
+        } else if (!beginCal) {
+            printf("DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
+            beginCal = true;
+            continue;
+        }
         
         if (startsWith(line, "VERSION:")) {
             if (version) {
-                deleteCalendar(cal);
+                deleteCalendar(*obj);
                 return DUP_VER;
             }
 
             printf("DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
             // +8 to start conversion after the 'VERSION:' part of the string
-            cal->version = strtof(trimWhitespace(line + 8), NULL);
-            printf("DEBUG: in createCalendar: set version to %f\n", cal->version);
+            (*obj)->version = strtof(line + 8, NULL);
+            printf("DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
             version = true;
         } else if (startsWith(line, "PRODID:")) {
             if (prodID) {
-                deleteCalendar(cal);
+                deleteCalendar(*obj);
                 return DUP_PRODID;
             }
 
             // +7 to only copy characters past 'PRODID:' part of the string
             printf("DEBUG: in createCalendar: found PRODID line: \"%s\"\n", line);
-            strcpy(cal->prodID, line + 7);
-            printf("DEBUG: in createCalendar: set product ID to\"%s\"\n", cal->prodID);
+            strcpy((*obj)->prodID, line + 7);
+            printf("DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
             prodID = true;
         } else if (startsWith(line, "METHOD:")) {
             if (method) {
-                deleteCalendar(cal);
+                deleteCalendar(*obj);
                 return OTHER_ERROR;
             }
 
             printf("DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
-            // TODO add method to the generic property List
+            insertFront((*obj)->properties, (void *)newProperty(line));
             method = true;
+        } else if (startsWith(line, "END:VCALENDAR")) {
+            endCal = true;
+        } else if (startsWith(line, "BEGIN:VCALENDAR")) {
+            deleteCalendar(*obj);
+            return INV_CAL;
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
-            // TODO add property to the generic property List
+            insertFront((*obj)->properties, (void *)newProperty(line));
         }
     }
-    
     fclose(fin);
 
-    // A calendar object requires a ProductID and a Version number.
-    // If the file does not have one, it is invalid.
+
+    printf("\nDEBUG: in createCalendar after parsing file:\n\tversion=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
+           version, prodID, method, beginCal, endCal);
+
+    // Calendars require a few mandatory elements. If one does not have
+    // any of these properties/lines, it is invalid.
     if (!prodID) {
-        deleteCalendar(cal);
+        deleteCalendar(*obj);
         return INV_PRODID;
     }
     if (!version) {
-        deleteCalendar(cal);
+        deleteCalendar(*obj);
         return INV_VER;
+    }
+    if (!endCal) {
+        deleteCalendar(*obj);
+        return INV_CAL;
     }
 
     // the file has been parsed, mandatory properties have been found,
@@ -130,6 +150,7 @@ void deleteCalendar(Calendar* obj) {
     freeList(obj->events);
     freeList(obj->properties);
     free(obj);
+    obj = NULL;
 }
 
 
@@ -141,6 +162,25 @@ void deleteCalendar(Calendar* obj) {
 **/
 char* printCalendar(const Calendar* obj) {
     char *toReturn = malloc(2000);
+
+    // check for malloc failing
+    if (toReturn == NULL) {
+        fprintf(stderr, "CALL TO MALLOC FAILED IN printCalendar()\n");
+        return NULL;
+    }
+
+    if (obj == NULL) {
+        printf("OBJ IS NULL\n");
+        return NULL;
+    }
+
+    if (obj->events == NULL) {
+        printf("EVENTSLIST IS NULL\n");
+    }
+    if (obj->properties == NULL) {
+        printf("PROPERTIESLIST IS NULL\n");
+    }
+
     char *eventListStr = toString(obj->events);
     char *propertyListStr = toString(obj->properties);
 
