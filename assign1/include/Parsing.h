@@ -61,7 +61,11 @@ char *strUpperCopy(const char *string);
  * CRLF(whitesapce) sequences.
  * 'unfold' must be large enough to hold the entire string.
  *
- * Returns the unfolded line.
+ * Returns the unfolded line after removing all leading and trailing whitespace characters.
  */
 char *readFold(char *unfolded, int size, FILE *fp);
+
+
+
+
 #endif // PARSING_H
