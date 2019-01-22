@@ -10,8 +10,10 @@
 #include "CalendarParser.h"
 #include "LinkedListAPI.h"
 #include "Parsing.h"
+#include "Initialize.h"
 
 int main() {
+
     /*
     printf("----------WHITESPACE TRIMMING----------\n");
     char s1[] = "   This has spaces.   ";
@@ -75,6 +77,7 @@ int main() {
 
 
 
+    /*
     printf("\n----------UNFOLDING AN ICAL PROPERTY ACROSS MULTIPLE LINES----------\n");
     FILE *desc1 = fopen("/home/joseph/cis2750/a01/testFiles/t1.ics", "r");
     FILE *desc2 = fopen("/home/joseph/cis2750/a01/testFiles/t2.ics", "r");
@@ -129,8 +132,10 @@ int main() {
     } else {
         printf("Opening desc3 failed\n");
     }
+    */
 
 
+    /*
     printf("\n~~~~~~~~~~ NEW FILE ~~~~~~~~~\n");
     if (desc4) {
         while (fgets(buffer, 79, desc4)) {
@@ -145,11 +150,12 @@ int main() {
     } else {
         printf("Opening desc4 failed\n");
     }
+    */
+    
 
 
 
-
-
+    /*
     printf("\n----------CREATE CALENDAR----------\n");
     Calendar *newCalendar;
     ICalErrorCode error = createCalendar("/home/joseph/cis2750/a01/testFiles/newCalendar.ics", &newCalendar);
@@ -164,11 +170,13 @@ int main() {
         printf("Something went wrong when reading \"newCalendar.ics\": %s\n", errorStr);
         free(errorStr);
     }
+    */
     
 
 
 
 
+    /*
     printf("\n----------STARTS WITH----------\n");
     printf("\"DESCRIPTION:Hi!\" and \"DESCRIPTION:\" = %d\n", startsWith("DESCRIPTION:Hi!", "DESCRIPTION:"));
     printf("\"PRODID:-//Google,...\" and \"PRODID:\" = %d\n", startsWith("PRODID:-//Google,...", "PRODID:"));
@@ -176,22 +184,26 @@ int main() {
     printf("\"Not this one either\" and \"VERSION:\" = %d\n", startsWith("Not this one either", "VERSION:"));
     printf("\"VERSION=2.0\" and \"VERSION:\" = %d\n", startsWith("VERSION=2.0", "VERSION:"));
     printf("\"VERSION=2.0\" and \"\" = %d\n", startsWith("VERSION=2.0", ""));
+    */
 
 
 
 
 
+    /*
     printf("\n----------ENDS WITH----------\n");
     printf("\"This is a test\" and \"t\" = %d\n", endsWith("This is a test", "t"));
     printf("\"This is a test\" and \"test\" = %d\n", endsWith("This is a test", "test"));
     printf("\"This is a test\" and \"q\" = %d\n", endsWith("This is a test", "q"));
     printf("\"This is a test\" and \"But this one is much much longer\" = %d\n", endsWith("This is a test", "But this one is much much longer"));
     printf("\"This is a test\" and \"\" = %d\n", endsWith("This is a test", ""));
+    */
 
 
 
 
 
+    /*
     printf("\n----------TOUPPER FUNCTIONS----------\n");
     char randCase[] = "ThiS CaSE is RandoM. HOPEFUllY thE FuncTioN WorKS ThIS TImE!";
     printf("Before: \"%s\"\n", randCase);
@@ -202,11 +214,13 @@ int main() {
     char *returnedRandCase = strUpperCopy(randCase2);
     printf("\nrandCase2: \"%s\"\nreturnedRandCase: \"%s\"", randCase2, returnedRandCase);
     free(returnedRandCase);
+    */
 
 
 
 
 
+    /*
     printf("\n\n\n----------FILE PARSE UNFOLDING----------\n");
     FILE *testUnfold = fopen("/home/joseph/cis2750/a01/testFiles/unfolding.ics", "r");
     char unfolded[2000];
@@ -234,74 +248,40 @@ int main() {
     fclose(testUnfold);
     fclose(multLineProp);
     fclose(testUnfold2);
+    */
+
+
+
+
 
     /*
-    printf("\n\n\n----------LIST TESTING----------\n");
-    printf("----------EVENT AND PROPERTY LIST IN A CALENDAR----------\n");
-    // Create a new calendar by hand, without parsing a file (it's just for testing anyways!)
-    Calendar *testCal = malloc(sizeof(Calendar));
-    testCal->events = initializeList(printEvent, deleteEvent, compareEvents);
-    testCal->properties = initializeList(printProperty, deleteProperty, compareProperties);
+    printf("\n\n\n----------PROPERTY CREATION----------\n");
+    char testProperty1[] = "DESCRIPTION:This is a test\r\n";
+    Property *testProp = newProperty(testProperty1);
+    char *printProp1 = printProperty(testProp);
+    printf("Property: \"%s\"\n", printProp1);
 
-    // Create some properties
-    char pd1[] = "CN=Joseph Coffa:mailto:jcoffa@uoguelph.ca";
-    Property *prop1 = malloc(sizeof(Property) + strlen(pd1) + 1);
-    strcpy(prop1->propName, "ORGANIZER");
-    strcpy(prop1->propDescr, pd1);
+    char testProperty2[] = "METHOD:Testmethod";
+    Property *testProp2 = newProperty(testProperty2);
+    char *printProp2 = printProperty(testProp2);
+    printf("Property: \"%s\"\n", printProp2);
 
-    char pd2[] = "20190120T194500Z";
-    Property *prop2 = malloc(sizeof(Property) + strlen(pd2) + 1);
-    strcpy(prop2->propName, "DTSTART");
-    strcpy(prop2->propDescr, pd2);
+    free(printProp1);
+    free(printProp2);
 
-    // add them to the Calendar's property lists
-    insertFront(testCal->properties, (void *)prop1);
-    insertFront(testCal->properties, (void *)prop2);
-
-    // create some events
-    DateTime create1;
-    strcpy(create1.date, "20180119");
-    strcpy(create1.time, "033400");
-    create1.UTC = true;
-
-    DateTime start1;
-    strcpy(start1.date, "20180122");
-    strcpy(start1.time, "024500");
-    start1.UTC = true;
-
-    Event *ev1 = malloc(sizeof(Event));
-    strcpy(ev1->UID, "040000008200E00074C5B7101A82E00800000000279CEA4C96511D4BB94C80E44E9DF21210000000C10B52D0760D2E41BB9821D392EF8158");
-    ev1->creationDateTime = create1;
-    ev1->startDateTime = start1;
-    ev1->properties = initializeList(printProperty, deleteProperty, compareProperties);
-    ev1->alarms = initializeList(printAlarm, deleteAlarm, compareAlarms);
-
-    char *evPDscr1 = "Sample property description";
-    Property *evP1 = malloc(sizeof(Property) + strlen(evPDscr1) + 1);
-    strcpy(evP1->propName, "This is a sample name");
-    strcpy(evP1->propDescr, evPDscr1);
-
-    insertFront(ev1->properties, evP1);
-
-    char *evADscr1 = "Sample alarm trigger";
-    Alarm *evA1 = malloc(sizeof(Alarm));
-    evA1->properties = initializeList(printProperty, deleteProperty, compareProperties);
-    strcpy(evA1->action, "This is a sample action");
-    evA1->trigger = malloc(strlen(evADscr1) + 1);
-    strcpy(evA1->trigger, evADscr1);
-
-    insertFront(ev1->alarms, evA1);
-
-    
-    insertFront(testCal->events, ev1);
-
-    // print and free Calendar string
-    char *calToStr = printCalendar(testCal);
-    printf("Calendar: \"%s\"\n", calToStr);
-    free(calToStr);
-
-    deleteCalendar(testCal);
+    free(testProp);
+    free(testProp2);
     */
+
+
+
+
+
+    printf("\n----------CALENDAR CREATION----------\n");
+    // TODO test createCalendar, getEvent, and getAlarm
+
+
 
     return EXIT_SUCCESS;
 }
+
