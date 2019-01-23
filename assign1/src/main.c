@@ -277,7 +277,60 @@ int main() {
 
 
 
-    printf("\n----------CALENDAR CREATION----------\n");
+    printf("\n\n\n----------INITIALIZE.C TESTING----------\n");
+    printf("----------DATE TIME----------\n");
+    DateTime dt1 = initializeDateTime("DTSTART:19990305T150722");
+    DateTime dt2 = initializeDateTime("DTSTART:20180122T003045Z");
+    DateTime dt3 = initializeDateTime("DTSTART:20101231T235959");
+    DateTime dt4 = initializeDateTime("DTASTARTLOL");
+
+    char *printDT = printDate(dt1);
+    printf("dt1: \"%s\"\n", printDT);
+    free(printDT);
+    printDT = printDate(dt2);
+    printf("dt2: \"%s\"\n", printDT);
+    free(printDT);
+    printDT = printDate(dt3);
+    printf("dt3: \"%s\"\n", printDT);
+    free(printDT);
+    // TODO check that dt4 sucessfully did not allocate memory or create a DateTime
+
+
+    printf("\n----------PROPERTY----------\n");
+    Property *prop1 = initializeProperty("ORGANIZER;CN=Joseph Coffa:mailto:example@webmail.ca");
+    Property *prop2 = initializeProperty("CALSCALE:Gregorian");
+    Property *prop3 = initializeProperty("DESCRIPTION:This is a sample description");
+    Property *prop4 = initializeProperty("PRODID:-//Google Inc//Google Calendar 70.9054//EN");
+
+    char *printP = printProperty(prop1);
+    printf("prop1: \"%s\"\n", printP);
+    free(printP);
+    printP = printProperty(prop2);
+    printf("prop2: \"%s\"\n", printP);
+    free(printP);
+    printP = printProperty(prop3);
+    printf("prop3: \"%s\"\n", printP);
+    free(printP);
+    printP = printProperty(prop4);
+    printf("prop4: \"%s\"\n", printP);
+    free(printP);
+
+
+    dprintf("\n----------ALARM----------\n");
+    Alarm *alm = initializeAlarm();
+    insertFront(alm->properties, prop1);
+    insertFront(alm->properties, prop2);
+    insertFront(alm->properties, prop3);
+    insertFront(alm->properties, prop4);
+
+
+    printf("\n----------EVENT----------\n");
+
+
+    printf("\n----------CALENDAR----------\n");
+
+
+    printf("\n\n\n----------CALENDAR CREATION----------\n");
     // TODO test createCalendar, getEvent, and getAlarm
 
 

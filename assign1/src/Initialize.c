@@ -16,15 +16,32 @@
  * Returns NULL if the line contains no information relevant to a DateTime structure.
  * Returns the DateTime structure otherwise.
  */
-DateTime newDateTime(char *line) {
+DateTime initializeDateTime(char *line) {
     DateTime toReturn;
+    char data[200];
+    const char delim[] = ";:";
+
+    if (line == NULL) {
+        return NULL;
+    }
+
+    int len = strlen(line);
+
+    // the line contains no characters in 'delim', or the capital letter T
+    // which is necessary to differentiate the date and time parts of a DateTime
+    if ((strcspn(line, delim) == len) || (strcspn(line, "T") == len)) {
+        return NULL;
+    }
+
+    // ignore everything before (and including) the property name and ':' or ';'
+    strcpy(data, line + strcspn(line, delim) + 1);
 
     // everything before the "T" character is the date
-    strncpy(toReturn.date, line, 8);
+    strncpy(toReturn.date, data, 8);
     toReturn.date[9] = '\0';
 
     // the next 6 characters after the "T" character is the time
-    strncpy(toReturn.time, line + tIndex, 6);
+    strncpy(toReturn.time, data + tIndex, 6);
     toReturn.time[7] = '\0';
 
     toReturn.UTC = (endsWith(line, "Z") || endsWith(line, "z"));
@@ -39,7 +56,7 @@ DateTime newDateTime(char *line) {
  * Returns NULL if the line contains no ':' or ';' characters.
  * Returns a pointer to the newly allocated Property otherwise.
  */
-Property *newProperty(char *line) {
+Property *initializeProperty(char *line) {
     char name[200], descr[1000];
     const char delim[] = ";:";
     Property *toReturn;
@@ -72,7 +89,7 @@ Property *newProperty(char *line) {
  * to perfectly fit the length of its string.
  * Returns a pointer to the newly allocated Alarm structure.
  */
-Alarm *newAlarm() {
+Alarm *initializeAlarm() {
     Alarm *toReturn = malloc(sizeof(Alarm));
     toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
 
@@ -85,7 +102,7 @@ Alarm *newAlarm() {
  * must be entered manually.
  * Returns a pointer to the newly allocated Event structure.
  */
-Event *newEvent() {
+Event *initializeEvent() {
     Event *toReturn = malloc(sizeof(Event));
     toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
     toReturn->alarms = initializeList(printAlarm, deleteAlarm, compareAlarms);
@@ -99,7 +116,7 @@ Event *newEvent() {
  * must be entered manually.
  * Returns a pointer to the newly allocated Calendar structure.
  */
-Calendar *newCalendar() {
+Calendar *initializeCalendar() {
     Calendar *toReturn = malloc(sizeof(Calendar));
     toReturn->events = initializeList(printEvent, deleteEvent, compareEvents);
     toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
