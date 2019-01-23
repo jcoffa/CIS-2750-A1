@@ -17,12 +17,8 @@
 #include "LinkedListAPI.h"
 
 /*
- * Creates a DateTime structure and populates it with data retrieved from the string 'line',
- * which should come from an iCalendar file.
- * Returns NULL if the line contains no information relevant to a DateTime structure.
- * Returns the DateTime structure otherwise.
  */
-DateTime newDateTime(char *line);
+void initializeDateTime(char *line, DateTime *dt);
 
 /*
  * Allocates memory for a Property structure and populates it with data retrieved from the
@@ -32,7 +28,7 @@ DateTime newDateTime(char *line);
  * Returns NULL if the line contains no ':' or ';' characters.
  * Returns a pointer to the newly allocated Property otherwise.
  */
-Property *newProperty(char *line);
+Property *initializeProperty(char *line);
 
 /*
  * Allocates memory for an Alarm structure, and initializes its Property List.
@@ -42,7 +38,7 @@ Property *newProperty(char *line);
  * to perfectly fir the length of its string.
  * Returns a pointer to the newly allocated Alarm structure.
  */
-Alarm *newAlarm();
+Alarm *initializeAlarm();
 
 /*
  * Allocates memory for an Event structure, and initializes its Property List.
@@ -50,7 +46,7 @@ Alarm *newAlarm();
  * must be entered manually.
  * Returns a pointer to the newly allocated Event structure.
  */
-Event *newEvent();
+Event *initializeEvent();
 
 /*
  * Allocates memory for a Calendar structure, and initializes all of its Lists.
@@ -58,6 +54,6 @@ Event *newEvent();
  * must be entered manually.
  * Returns a pointer to the newly allocated Calendar structure.
  */
-Calendar *newCalendar();
+Calendar *initializeCalendar();
 
 #endif

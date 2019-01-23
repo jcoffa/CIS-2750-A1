@@ -16,6 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CalendarParser.h"
+#include "Initialize.h"
+
 /*
  * Removes all leading and trailing whitespace from the given string.
  * Returns the updated string.
@@ -66,6 +69,9 @@ char *strUpperCopy(const char *string);
 char *readFold(char *unfolded, int size, FILE *fp);
 
 
+ICalErrorCode getEvent(FILE *fp, Event **event);
+
+ICalErrorCode getAlarm(FILE *fp, Alarm **alarm);
 
 
 #endif // PARSING_H

@@ -72,6 +72,8 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             continue;
         }
         
+
+        // add properties, alarms, events, and other elements to the calendar
         if (startsWith(line, "VERSION:")) {
             if (version) {
                 deleteCalendar(*obj);
@@ -101,16 +103,22 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             }
 
             printf("DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
-            insertFront((*obj)->properties, (void *)newProperty(line));
+            insertFront((*obj)->properties, (void *)initializeProperty(line));
             method = true;
         } else if (startsWith(line, "END:VCALENDAR")) {
             endCal = true;
         } else if (startsWith(line, "BEGIN:VCALENDAR")) {
             deleteCalendar(*obj);
             return INV_CAL;
+        } else if (startsWith(line, "BEGIN:VEVENT")) {
+            // TODO
+        } else if (startsWith(line, "BEGIN:VALARM")) {
+            // there can't be an alarm for an entire calendar
+            deleteCalendar(*obj);
+            return INV_ALARM;
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
-            insertFront((*obj)->properties, (void *)newProperty(line));
+            insertFront((*obj)->properties, (void *)initializeProperty(line));
         }
     }
     fclose(fin);

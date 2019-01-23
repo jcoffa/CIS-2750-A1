@@ -11,8 +11,6 @@
 
 #include "Parsing.h"
 
-// TODO write functions
-
 
 /*
  * Removes all leading and trailing whitespace from the given string.
@@ -191,21 +189,23 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     bool dtStamp, dtStart, UID;
     dtStamp = dtStart = UID = false;
 
-    *event = newEvent();
+    *event = initializeEvent();
 
     while (strcmp(readFold(line, 20000, fp), "END:VEVENT") != 0 && !feof(fp)) {
         if (startsWith(line, ";")) {
             // lines that start with ';' are comments and should be ignored
             continue;
         } else if (startsWith(line, "DTSTAMP")) {
-            // creation date of alarm
+            // creation date of event
             if (dtStamp) {
                 deleteEvent(*event);
                 return INV_EVENT;
             }
             dtStamp = true;
 
-            (*event)->creationDateTime = newDateTime(line + strcspn(line, ":;") + 1);
+            DateTime stamp;
+            initializeDateTime(line + 8, &stamp);
+            (*event)->creationDateTime = stamp;
         } else if (startsWith(line, "DTSTART")) {
             // start of event
             if (dtStart) {
@@ -214,7 +214,9 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             }
             dtStart = true;
 
-            (*event)->startDateTime = newDateTime(line + strcspn(line, ":;") + 1);
+            DateTime start;
+            initializeDateTime(line + 8, &start);
+            (*event)->startDateTime = start;
         } else if (startsWith(line, "UID")) {
             if (UID) {
                 deleteEvent(*event);
@@ -231,7 +233,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
                 return INV_ALARM;
             }
         } else {
-           insertFront((*event)->properties, (void *)newProperty(line));
+           insertFront((*event)->properties, (void *)initializeProperty(line));
         }
     }
 
@@ -244,20 +246,20 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     bool trigger, action;
     trigger = action = false;
 
-    *alarm = newAlarm();
+    *alarm = initializeAlarm();
 
     while (strcmp(readFold(line, 2000, fp), "END:VALARM") != 0 && !feof(fp)) {
         if (startsWith(line, ";")) {
             // lines that start with ';' are comments and should be ignored
             continue;
         } else if (startsWith(line, "TRIGGER")) {
-            // -8 for the characters in 'TRIGGER:', +1 for null terminator
             if (trigger) {
                 deleteAlarm(*alarm);
                 return INV_ALARM;
             }
             trigger = true;
 
+            // -8 for the characters in 'TRIGGER:', +1 for null terminator
             (*alarm)->trigger = malloc(strlen(line) - 7);
             strcpy((*alarm)->trigger, line + 8);
         } else if (startsWith(line, "ACTION")) {
@@ -269,7 +271,7 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
 
             strcpy((*alarm)->action, line + 7);
         } else {
-            insertFront((*alarm)->properties, (void *)newProperty(line));
+            insertFront((*alarm)->properties, (void *)initializeProperty(line));
         }
     }
 

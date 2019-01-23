@@ -13,7 +13,7 @@
 
 # files
 LIBS = CalendarParser.h LinkedListAPI.h Parsing.h Initialize.h
-SHARED = liblist.so libcal.so libparsing.so
+SHARED = liblist.so libcal.so libparsing.so libinit.so
 
 # directory names and paths
 SRC = src
@@ -32,7 +32,7 @@ LDFLAGS := -L. $(addprefix -L,$(OUT)) $(addprefix -l,$(SHARED:.so= ))
 # Make Rules #
 ##############
 
-all: list parser libparsing.so main
+all: list parser libparsing.so libinit.so main
 
 # TODO create shared library liblist.so in assign1/bin
 list: LinkedListAPI.o
@@ -54,10 +54,14 @@ libparsing.so: Parsing.o
 Parsing.o: Parsing.c Parsing.h
 	$(CC) $(CFLAGS) -c -fpic $(SRC)/Parsing.c -o $(OUT)/Parsing.o
 
+libinit.so: Initialize.o
+	$(CC) -shared $(OUT)/Initialize.o -o $(OUT)/libinit.so
+
+Initialize.o: Initialize.c Initialize.h
+	$(CC) $(CFLAGS) -c -fpic $(SRC)/Initialize.c -o $(OUT)/Initialize.o
+
 main: main.c $(LIBS:.h=.c)
 	$(CC) $(CFLAGS) $(addprefix $(SRC)/,$(LIBS:.h=.c)) $(SRC)/main.c -o $(OUT)/main
-#main: main.c $(SHARED)
-#	$(CC) $(LDFLAGS) $(CFLAGS) $(SRC)/main.c -o $(OUT)/main
 
 
 #############

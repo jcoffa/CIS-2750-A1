@@ -11,18 +11,16 @@
 #include "Parsing.h"
 
 /*
- * Creates a DateTime structure and populates it with data retrieved from the string 'line',
+ * Populates the DateTime structure 'dt' with data retrieved from the string 'line',
  * which should come from an iCalendar file.
- * Returns NULL if the line contains no information relevant to a DateTime structure.
- * Returns the DateTime structure otherwise.
  */
-DateTime initializeDateTime(char *line) {
-    DateTime toReturn;
+void initializeDateTime(char *line, DateTime *dt) {
     char data[200];
     const char delim[] = ";:";
 
     if (line == NULL) {
-        return NULL;
+        dt = NULL;
+        return;
     }
 
     int len = strlen(line);
@@ -30,22 +28,22 @@ DateTime initializeDateTime(char *line) {
     // the line contains no characters in 'delim', or the capital letter T
     // which is necessary to differentiate the date and time parts of a DateTime
     if ((strcspn(line, delim) == len) || (strcspn(line, "T") == len)) {
-        return NULL;
+        dt = NULL;
+        return;
     }
 
     // ignore everything before (and including) the property name and ':' or ';'
     strcpy(data, line + strcspn(line, delim) + 1);
 
     // everything before the "T" character is the date
-    strncpy(toReturn.date, data, 8);
-    toReturn.date[9] = '\0';
+    strncpy(dt->date, data, 8);
+    dt->date[9] = '\0';
 
     // the next 6 characters after the "T" character is the time
-    strncpy(toReturn.time, data + tIndex, 6);
-    toReturn.time[7] = '\0';
+    strncpy(dt->time, data + strcspn(data, "T"), 6);
+    dt->time[7] = '\0';
 
-    toReturn.UTC = (endsWith(line, "Z") || endsWith(line, "z"));
-    return toReturn;
+    dt->UTC = (endsWith(line, "Z") || endsWith(line, "z"));
 }
 
 /*
