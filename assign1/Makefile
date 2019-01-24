@@ -16,12 +16,15 @@ LIBS = CalendarParser.h LinkedListAPI.h Parsing.h Initialize.h
 SHARED = list cal parsing init
 
 # update VPATH to search directories for files specified in rule preqrequisites
-VPATH = src:include:bin
+SRC = src
+OUT = bin
+INCL = include
+VPATH = $(SRC):$(INCL):$(OUT)
 
 # compilation options
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wpedantic -Iinclude -g
-LDFLAGS := -L. -Lbin $(addprefix -l,$(SHARED))
+CFLAGS := -std=c11 -Wall -Wpedantic $(addprefix -I,$(INCL)) -g
+LDFLAGS := -L. -L$(OUT) $(addprefix -l,$(SHARED))
 
 
 ##############
@@ -35,31 +38,31 @@ list: liblist.so
 parser: libcal.so
 	
 liblist.so: LinkedListAPI.o
-	$(CC) -shared bin/LinkedListAPI.o -o bin/liblist.so
+	$(CC) -shared $(OUT)/LinkedListAPI.o -o $(OUT)/liblist.so
 
 LinkedListAPI.o: LinkedListAPI.c LinkedListAPI.h
-	$(CC) $(CFLAGS) -c -fpic src/LinkedListAPI.c -o bin/LinkedListAPI.o
+	$(CC) $(CFLAGS) -c -fpic $(SRC)/LinkedListAPI.c -o $(OUT)/LinkedListAPI.o
 
-libcal.so:: CalendarParser.o
-	$(CC) -shared bin/CalendarParser.o -o bin/libcal.so
+libcal.so: CalendarParser.o
+	$(CC) -shared $(OUT)/CalendarParser.o -o $(OUT)/libcal.so
 
 CalendarParser.o: CalendarParser.c CalendarParser.h
-	$(CC) $(CFLAGS) -c -fpic src/CalendarParser.c -o bin/CalendarParser.o
+	$(CC) $(CFLAGS) -c -fpic $(SRC)/CalendarParser.c -o $(OUT)/CalendarParser.o
 
 libparsing.so: Parsing.o
-	$(CC) -shared bin/Parsing.o -o bin/libparsing.so
+	$(CC) -shared $(OUT)/Parsing.o -o $(OUT)/libparsing.so
 
 Parsing.o: Parsing.c Parsing.h
-	$(CC) $(CFLAGS) -c -fpic src/Parsing.c -o bin/Parsing.o
+	$(CC) $(CFLAGS) -c -fpic $(SRC)/Parsing.c -o $(OUT)/Parsing.o
 
 libinit.so: Initialize.o
-	$(CC) -shared bin/Initialize.o -o bin/libinit.so
+	$(CC) -shared $(OUT)/Initialize.o -o $(OUT)/libinit.so
 
 Initialize.o: Initialize.c Initialize.h
-	$(CC) $(CFLAGS) -c -fpic src/Initialize.c -o bin/Initialize.o
+	$(CC) $(CFLAGS) -c -fpic $(SRC)/Initialize.c -o $(OUT)/Initialize.o
 
 main: main.c $(addprefix lib,$(addsuffix .so,$(SHARED)))
-	$(CC) $(CFLAGS) $(LDFLAGS) src/main.c -o bin/main
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SRC)/main.c -o $(OUT)/main
 
 
 
@@ -69,18 +72,18 @@ main: main.c $(addprefix lib,$(addsuffix .so,$(SHARED)))
 
 run:
 	$(MAKE) main
-	LD_LIBRARY_PATH=.:bin:$LD_LIBRARY_PATH ./bin/main
+	LD_LIBRARY_PATH=.:$(OUT):$LD_LIBRARY_PATH ./$(OUT)/main
 
 # make and run the main executable with valgrind
 memory:
 	$(MAKE) main
-	LD_LIBRARY_PATH=.:bin:$LD_LIBRARY_PATH valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./bin/main
+	LD_LIBRARY_PATH=.:$(OUT):$LD_LIBRARY_PATH valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(OUT)/main
 
 debug:
 	$(MAKE) main
-	LD_LIBRARY_PATH=.:bin:$LD_LIBRARY_PATH gdb ./bin/main
+	LD_LIBRARY_PATH=.:$(OUT):$LD_LIBRARY_PATH gdb ./$(OUT)/main
 
 # removes all .o and .so files, and the main executable
 clean:
-	rm bin/*.o bin/*.so bin/main
+	rm $(OUT)/*.o $(OUT)/*.so $(OUT)/main
 
