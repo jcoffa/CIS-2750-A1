@@ -32,16 +32,25 @@ void initializeDateTime(char *line, DateTime *dt) {
         return;
     }
 
+    strcpy(dt->date, "");
+    strcpy(dt->time, "");
+
     // ignore everything before (and including) the property name and ':' or ';'
+    printf("\tline: \"%s\"\n", line);
+    printf("\tline + strcspn(line, \"%s\") + 1 = \"%s\"\n", delim, line + strcspn(line, delim) + 1);
     strcpy(data, line + strcspn(line, delim) + 1);
+    printf("\tdata: \"%s\"\n", data);
 
     // everything before the "T" character is the date
+    printf("\t(dt->date)[9] = %c - %d\n", (dt->date)[9], (dt->date)[9]);
     strncpy(dt->date, data, 8);
-    dt->date[9] = '\0';
+    printf("\t(dt->date)[9] = %c - %d\n", (dt->date)[9], (dt->date)[9]);
+    (dt->date)[9] = '\0';
+    printf("\t(dt->date)[9] = %c - %d\n", (dt->date)[9], (dt->date)[9]);
 
     // the next 6 characters after the "T" character is the time
-    strncpy(dt->time, data + strcspn(data, "T"), 6);
-    dt->time[7] = '\0';
+    strncpy(dt->time, data + strcspn(data, "T")+1, 6);
+    (dt->time)[7] = '\0';
 
     dt->UTC = (endsWith(line, "Z") || endsWith(line, "z"));
 }

@@ -279,14 +279,20 @@ int main() {
 
     printf("\n\n\n----------INITIALIZE.C TESTING----------\n");
     printf("----------DATE TIME----------\n");
+    char dtD1[] = "DTSTART:19990305T150722";
     DateTime dt1;
-    initializeDateTime("DTSTART:19990305T150722", &dt1);
+    initializeDateTime(dtD1, &dt1);
+    printf("\n");
+    char dtD2[] = "DTSTART:20180122T003045Z";
     DateTime dt2;
-    initializeDateTime("DTSTART:20180122T003045Z", &dt2);
+    initializeDateTime(dtD2, &dt2);
+    char dtD3[] = "DTSTART:20101231T235959";
     DateTime dt3;
-    initializeDateTime("DTSTART:20101231T235959", &dt3);
+    printf("\n");
+    initializeDateTime(dtD3, &dt3);
+    char dtD4[] = "DTAAAAASTARTLOL";
     DateTime dt4;
-    initializeDateTime("DTAAAAASTARTLOL", &dt4);
+    initializeDateTime(dtD4, &dt4);
 
     char *printDT = printDate((void *)&dt1);
     printf("dt1: \"%s\"\n", printDT);
@@ -300,11 +306,16 @@ int main() {
 
 
 
+    /*
     printf("\n----------PROPERTY----------\n");
-    Property *prop1 = initializeProperty("ORGANIZER;CN=Joseph Coffa:mailto:example@webmail.ca");
-    Property *prop2 = initializeProperty("CALSCALE:Gregorian");
-    Property *prop3 = initializeProperty("DESCRIPTION:This is a sample description");
-    Property *prop4 = initializeProperty("PRODID:-//Google Inc//Google Calendar 70.9054//EN");
+    char pd1[] = "ORGANIZER;CN=Joseph Coffa:mailto:example@webmail.ca"
+    char pd2[] = "CALSCALE:Gregorian"
+    char pd3[] = "DESCRIPTION:This is a sample description"
+    char pd4[] = "PRODID:-//Google Inc//Google Calendar 70.9054//EN"
+    Property *prop1 = initializeProperty(pd1);
+    Property *prop2 = initializeProperty(pd2);
+    Property *prop3 = initializeProperty(pd3);
+    Property *prop4 = initializeProperty(pd4);
 
     char *printP = printProperty((void *)prop1);
     printf("prop1: \"%s\"\n", printP);
@@ -318,8 +329,10 @@ int main() {
     printP = printProperty((void *)prop4);
     printf("prop4: \"%s\"\n", printP);
     free(printP);
+    */
 
 
+    /*
     printf("\n----------ALARM----------\n");
     Alarm *alm = initializeAlarm();
     insertFront(alm->properties, prop1);
@@ -330,8 +343,10 @@ int main() {
     char *printA = printAlarm((void *)alm);
     printf("Alarm with 4 properties: \"%s\"\n", printA);
     free(printA);
+    */
 
 
+    /*
     printf("\n----------EVENT----------\n");
     Event *event = initializeEvent();
     insertFront(event->alarms, alm);
@@ -339,8 +354,10 @@ int main() {
     char *printE = printEvent((void *)event);
     printf("Event with 1 alarm (with 4 properties): \"%s\"\n", printE);
     free(printE);
+    */
 
 
+    /*
     printf("\n----------CALENDAR----------\n");
     Calendar *calendar = initializeCalendar();
     insertFront(calendar->events, event);
@@ -351,9 +368,10 @@ int main() {
 
     // This should delete all of the stuff (hopefully?)
     deleteCalendar(calendar);
+    */
 
 
-    printf("\n\n\n----------CALENDAR CREATION----------\n");
+    //printf("\n\n\n----------CALENDAR CREATION----------\n");
     // TODO test createCalendar, getEvent, and getAlarm
 
 
