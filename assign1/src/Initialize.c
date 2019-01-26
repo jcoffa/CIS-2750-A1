@@ -16,7 +16,8 @@
  */
 void initializeDateTime(char *line, DateTime *dt) {
     char data[200];
-    const char delim[] = ";:";
+    const char delimData[] = ";:";
+    const char delimTime[] = "Tt";
 
     if (line == NULL) {
         dt = NULL;
@@ -27,7 +28,7 @@ void initializeDateTime(char *line, DateTime *dt) {
 
     // the line contains no characters in 'delim', or the capital letter T
     // which is necessary to differentiate the date and time parts of a DateTime
-    if ((strcspn(line, delim) == len) || (strcspn(line, "T") == len)) {
+    if ((strcspn(line, delimData) == len) || (strcspn(line, delimTime) == len)) {
         dt = NULL;
         return;
     }
@@ -37,8 +38,8 @@ void initializeDateTime(char *line, DateTime *dt) {
 
     // ignore everything before (and including) the property name and ':' or ';'
     printf("\tline: \"%s\"\n", line);
-    printf("\tline + strcspn(line, \"%s\") + 1 = \"%s\"\n", delim, line + strcspn(line, delim) + 1);
-    strcpy(data, line + strcspn(line, delim) + 1);
+    printf("\tline + strcspn(line, \"%s\") + 1 = \"%s\"\n", delimData, line + strcspn(line, delimData) + 1);
+    strcpy(data, line + strcspn(line, delimData) + 1);
     printf("\tdata: \"%s\"\n", data);
 
     // everything before the "T" character is the date
@@ -49,7 +50,7 @@ void initializeDateTime(char *line, DateTime *dt) {
     printf("\t(dt->date)[9] = %c - %d\n", (dt->date)[9], (dt->date)[9]);
 
     // the next 6 characters after the "T" character is the time
-    strncpy(dt->time, data + strcspn(data, "T")+1, 6);
+    strncpy(dt->time, data + strcspn(data, delimTime)+1, 6);
     (dt->time)[7] = '\0';
 
     dt->UTC = (endsWith(line, "Z") || endsWith(line, "z"));
