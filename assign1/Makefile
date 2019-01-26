@@ -70,6 +70,7 @@ main: main.c $(addprefix lib,$(addsuffix .so,$(SHARED)))
 # Utilities #
 #############
 
+# make and run the main executable
 run:
 	$(MAKE) main
 	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH ./$(OUT)/main
@@ -80,6 +81,7 @@ memory:
 	$(MAKE) main
 	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(OUT)/main
 
+# make and run the main executable with gdb
 debug:
 	$(MAKE) main
 	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH gdb ./$(OUT)/main
