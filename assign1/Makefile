@@ -72,16 +72,17 @@ main: main.c $(addprefix lib,$(addsuffix .so,$(SHARED)))
 
 run:
 	$(MAKE) main
-	LD_LIBRARY_PATH=.:$(OUT):$LD_LIBRARY_PATH ./$(OUT)/main
+	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH ./$(OUT)/main
+
 
 # make and run the main executable with valgrind
 memory:
 	$(MAKE) main
-	LD_LIBRARY_PATH=.:$(OUT):$LD_LIBRARY_PATH valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(OUT)/main
+	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(OUT)/main
 
 debug:
 	$(MAKE) main
-	LD_LIBRARY_PATH=.:$(OUT):$LD_LIBRARY_PATH gdb ./$(OUT)/main
+	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH gdb ./$(OUT)/main
 
 # removes all .o and .so files, and the main executable
 clean:
