@@ -31,6 +31,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
     // file must end with the .ics extension
     if (!endsWith(fileName, ".ics")) {
+        *obj = NULL;
         return INV_FILE;
     }
 
@@ -43,10 +44,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         return INV_FILE;
     }
 
-    // initialize the Calendar object
-    *obj = malloc(sizeof(Calendar));
-    (*obj)->events = initializeList(printEvent, deleteEvent, compareEvents);
-    (*obj)->properties = initializeList(printProperty, deleteProperty, compareProperties);
+    *obj = initializeCalendar();
 
     char line[2000];
 
@@ -54,6 +52,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         printf("\tDEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
                version, prodID, method, beginCal, endCal);
         readFold(line, 2000, fin);
+        strUpper(line);
         
         if (startsWith(line, ";")) {
             // lines starting with a semicolon (;) are comments, and
@@ -65,6 +64,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         if (!beginCal && !startsWith(line, "BEGIN:VCALENDAR")) {
             printf("DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
             deleteCalendar(*obj);
+            *obj = NULL;
             return INV_CAL;
         } else if (!beginCal) {
             printf("DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
@@ -77,6 +77,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         if (startsWith(line, "VERSION:")) {
             if (version) {
                 deleteCalendar(*obj);
+                *obj = NULL;
                 return DUP_VER;
             }
 
@@ -88,6 +89,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         } else if (startsWith(line, "PRODID:")) {
             if (prodID) {
                 deleteCalendar(*obj);
+                *obj = NULL;
                 return DUP_PRODID;
             }
 
@@ -109,12 +111,14 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             endCal = true;
         } else if (startsWith(line, "BEGIN:VCALENDAR")) {
             deleteCalendar(*obj);
+            *obj = NULL;
             return INV_CAL;
         } else if (startsWith(line, "BEGIN:VEVENT")) {
             // TODO
         } else if (startsWith(line, "BEGIN:VALARM")) {
             // there can't be an alarm for an entire calendar
             deleteCalendar(*obj);
+            *obj = NULL;
             return INV_ALARM;
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
@@ -131,14 +135,17 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     // any of these properties/lines, it is invalid.
     if (!prodID) {
         deleteCalendar(*obj);
+        *obj = NULL;
         return INV_PRODID;
     }
     if (!version) {
         deleteCalendar(*obj);
+        *obj = NULL;
         return INV_VER;
     }
     if (!endCal) {
         deleteCalendar(*obj);
+        *obj = NULL;
         return INV_CAL;
     }
 
@@ -158,7 +165,6 @@ void deleteCalendar(Calendar* obj) {
     freeList(obj->events);
     freeList(obj->properties);
     free(obj);
-    obj = NULL;
 }
 
 
@@ -169,7 +175,7 @@ void deleteCalendar(Calendar* obj) {
  *@param obj - a pointer to a Calendar struct
 **/
 char* printCalendar(const Calendar* obj) {
-    char *toReturn = malloc(2000);
+    char *toReturn = malloc(10000);
 
     // check for malloc failing
     if (toReturn == NULL) {
@@ -195,7 +201,7 @@ char* printCalendar(const Calendar* obj) {
     // A neat little function I found that allows for string creation using printf
     // format specifiers. Makes stringing information together in a string like this
     // much easier than using strcat() repeatedly!
-    snprintf(toReturn, 2000, "Calendar: {VERSION=%.2f, PRODID=%s, EVENTS={%s\n} End EVENTS, PROPERTIES={%s\n} End PROPERTIES}", \
+    snprintf(toReturn, 10000, "Calendar: {VERSION=%.2f, PRODID=%s, EVENTS={%s\n} End EVENTS, PROPERTIES={%s\n} End PROPERTIES}", \
              obj->version, obj->prodID, eventListStr, propertyListStr);
 
     free(eventListStr);
@@ -259,6 +265,10 @@ char* printError(ICalErrorCode err) {
 
         case OTHER_ERROR:
             strcpy(toReturn, "OTHER_ERROR: No details available");
+            break;
+
+        default:
+            sprintf(toReturn, "UNKNOWN ERROR: Found error with value %d", err);
             break;
     }
 
@@ -378,6 +388,12 @@ char* printAlarm(void* toBePrinted) {
     // Lists have their own print function
     char *props = toString(al->properties);
 
+    printf("\tDEBUG: in printAlarm: strlen(al->action) = %ld\n", strlen(al->action));
+    printf("\tDEBUG: in printAlarm: strlen(al->trigger) = %ld\n", strlen(al->trigger));
+    printf("\tDEBUG: in printAlarm: strlen(props) = %ld\n", strlen(props));
+
+    printf("\n\tDEBUG: in printAlarm: toString(al->properties) = \"%s\"\n", props);
+
     int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 80;
     char *toReturn = malloc(length);
 
@@ -456,8 +472,8 @@ char* printDate(void* toBePrinted) {
 
     DateTime *dt = (DateTime *)toBePrinted;
 
-    // 9 chars for date,+ 7 for time, + 70 for rest of string = 86 bytes, round to 90
-    int length = 90;
+    // 9 chars for date, + 7 for time, + 70 for rest of string = 86 bytes, round to 100 to be safe
+    int length = 100;
     char *toReturn = malloc(length);
 
     snprintf(toReturn, length, "Date (YYYYMMDD): \"%s\", Time (HHMMSS): \"%s\", UTC?: %s", \
