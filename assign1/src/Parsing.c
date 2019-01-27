@@ -185,17 +185,22 @@ char *readFold(char *unfolded, int size, FILE *fp) {
 
 
 ICalErrorCode getEvent(FILE *fp, Event **event) {
-    char line[2000];
+    char line[2000], *parse;
     bool dtStamp, dtStart, UID;
     dtStamp = dtStart = UID = false;
 
+    printf("\tDEBUG: Started getEvent()\n");
+
     *event = initializeEvent();
 
-    while (strcmp(readFold(line, 20000, fp), "END:VEVENT") != 0 && !feof(fp)) {
-        if (startsWith(line, ";")) {
+    do { // while (strcmp(readFold(line, 20000, fp), "END:VEVENT") != 0 && !feof(fp)) {
+        readFold(line, 2000, fp);
+        parse = strUpperCopy(line);
+
+        if (startsWith(parse, ";")) {
             // lines that start with ';' are comments and should be ignored
             continue;
-        } else if (startsWith(line, "DTSTAMP")) {
+        } else if (startsWith(parse, "DTSTAMP")) {
             // creation date of event
             if (dtStamp) {
                 deleteEvent(*event);
@@ -204,9 +209,9 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             dtStamp = true;
 
             DateTime stamp;
-            initializeDateTime(line + 8, &stamp);
+            initializeDateTime(parse + 8, &stamp);
             (*event)->creationDateTime = stamp;
-        } else if (startsWith(line, "DTSTART")) {
+        } else if (startsWith(parse, "DTSTART")) {
             // start of event
             if (dtStart) {
                 deleteEvent(*event);
@@ -215,17 +220,17 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             dtStart = true;
 
             DateTime start;
-            initializeDateTime(line + 8, &start);
+            initializeDateTime(parse + 8, &start);
             (*event)->startDateTime = start;
-        } else if (startsWith(line, "UID")) {
+        } else if (startsWith(parse, "UID")) {
             if (UID) {
                 deleteEvent(*event);
                 return INV_EVENT;
             }
             UID = true;
 
-            strcpy((*event)->UID, line + 4);
-        } else if (startsWith(line, "BEGIN:VALARM")) {
+            strcpy((*event)->UID, parse + 4);
+        } else if (startsWith(parse, "BEGIN:VALARM")) {
             Alarm *toAdd;
             if (getAlarm(fp, &toAdd) == OK) {
                  insertFront((*event)->alarms, (void *)toAdd);
@@ -233,47 +238,54 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
                 return INV_ALARM;
             }
         } else {
-           insertFront((*event)->properties, (void *)initializeProperty(line));
+           insertFront((*event)->properties, (void *)initializeProperty(parse));
         }
-    }
+    } while (strcmp(parse, "END:VEVENT") != 0 && !feof(fp));
 
     return OK;
 }
 
 
 ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
-    char line[2000];
+    char line[2000], *parse;
     bool trigger, action;
     trigger = action = false;
 
     *alarm = initializeAlarm();
 
-    while (strcmp(readFold(line, 2000, fp), "END:VALARM") != 0 && !feof(fp)) {
-        if (startsWith(line, ";")) {
+    do { // while (strcmp(readFold(line, 2000, fp), "END:VALARM") != 0 && !feof(fp)) {
+        readFold(line, 2000, fp);
+        parse = strUpperCopy(line);
+
+        if (startsWith(parse, ";")) {
             // lines that start with ';' are comments and should be ignored
             continue;
-        } else if (startsWith(line, "TRIGGER")) {
+        } else if (startsWith(parse, "TRIGGER")) {
             if (trigger) {
                 deleteAlarm(*alarm);
+                free(parse);
+                *alarm = NULL;
                 return INV_ALARM;
             }
             trigger = true;
 
             // -8 for the characters in 'TRIGGER:', +1 for null terminator
-            (*alarm)->trigger = malloc(strlen(line) - 7);
-            strcpy((*alarm)->trigger, line + 8);
-        } else if (startsWith(line, "ACTION")) {
+            (*alarm)->trigger = malloc(strlen(parse) - 7);
+            strcpy((*alarm)->trigger, parse + 8);
+        } else if (startsWith(parse, "ACTION")) {
             if (action) {
                 deleteAlarm(*alarm);
+                free(parse);
+                *alarm = NULL;
                 return INV_ALARM;
             }
             action = true;
 
-            strcpy((*alarm)->action, line + 7);
+            strcpy((*alarm)->action, parse + 7);
         } else {
-            insertFront((*alarm)->properties, (void *)initializeProperty(line));
+            insertFront((*alarm)->properties, (void *)initializeProperty(parse));
         }
-    }
+    } while (strcmp(parse, "END:VALARM") != 0 && !feof(fp));
 
     return OK;
 }
