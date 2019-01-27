@@ -10,11 +10,15 @@
 #include "Initialize.h"
 #include "Parsing.h"
 
+
+// TODO return ICaleErrorCodes and pass in address of structure to function
+// and allocate memory there (like in createCalendar)
+
 /*
  * Populates the DateTime structure 'dt' with data retrieved from the string 'line',
  * which should come from an iCalendar file.
  */
-void initializeDateTime(char *line, DateTime *dt) {
+void initializeDateTime(const char *line, DateTime *dt) {
     char data[200];
     const char delimData[] = ";:";
     const char delimTime[] = "Tt";
@@ -26,32 +30,23 @@ void initializeDateTime(char *line, DateTime *dt) {
 
     int len = strlen(line);
 
-    // the line contains no characters in 'delim', or the capital letter T
+    // the line contains no characters in 'delim', or the letter t
     // which is necessary to differentiate the date and time parts of a DateTime
     if ((strcspn(line, delimData) == len) || (strcspn(line, delimTime) == len)) {
         dt = NULL;
         return;
     }
 
-    strcpy(dt->date, "");
-    strcpy(dt->time, "");
-
     // ignore everything before (and including) the property name and ':' or ';'
-    printf("\tline: \"%s\"\n", line);
-    printf("\tline + strcspn(line, \"%s\") + 1 = \"%s\"\n", delimData, line + strcspn(line, delimData) + 1);
     strcpy(data, line + strcspn(line, delimData) + 1);
-    printf("\tdata: \"%s\"\n", data);
 
-    // everything before the "T" character is the date
-    printf("\t(dt->date)[9] = %c - %d\n", (dt->date)[9], (dt->date)[9]);
+    // the first 8 characters is the date
     strncpy(dt->date, data, 8);
-    printf("\t(dt->date)[9] = %c - %d\n", (dt->date)[9], (dt->date)[9]);
-    (dt->date)[9] = '\0';
-    printf("\t(dt->date)[9] = %c - %d\n", (dt->date)[9], (dt->date)[9]);
+    (dt->date)[8] = '\0';   // strncpy does not automatically null-terminate
 
     // the next 6 characters after the "T" character is the time
     strncpy(dt->time, data + strcspn(data, delimTime)+1, 6);
-    (dt->time)[7] = '\0';
+    (dt->time)[7] = '\0';   // strncpy does not automatically null-terminate
 
     dt->UTC = (endsWith(line, "Z") || endsWith(line, "z"));
 }
@@ -64,10 +59,18 @@ void initializeDateTime(char *line, DateTime *dt) {
  * Returns NULL if the line contains no ':' or ';' characters.
  * Returns a pointer to the newly allocated Property otherwise.
  */
-Property *initializeProperty(char *line) {
-    char name[200], descr[1000];
+Property *initializeProperty(const char *line) {
+    char name[200], descr[2000], *parse, *token;
     const char delim[] = ";:";
     Property *toReturn;
+
+    if (line == NULL) {
+        return NULL;
+    }
+
+    if (strlen(line) == 0) {
+        return NULL;
+    }
 
     // if these values are the same, then 'line' does not contain
     // any of the delimiting characters that are indicative of a property
@@ -77,14 +80,34 @@ Property *initializeProperty(char *line) {
         return NULL;
     }
 
-    strcpy(name, strtok(line, delim));
-    strcpy(descr, strtok(NULL, delim));
+    // make a copy that can be safely modified
+    parse = malloc(strlen(line) + 1);
+    strcpy(parse, line);
+
+    // property name is mandatory, and cannot be empty
+    token = strtok(parse, delim);
+    if (token != NULL) {
+        strcpy(name, token);
+    } else {
+        free(parse);
+        return NULL;
+    }
+
+    // sometimes a property description can be empty, so we have to account for that
+    token = strtok(parse, delim);
+    if (token != NULL) {
+        strcpy(descr, token);
+    } else {
+        strcpy(descr, "");
+    }
 
     printf("DEBUG: in newProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
 
     toReturn = malloc(sizeof(Property) + strlen(descr) + 1);
     strcpy(toReturn->propName, name);
     strcpy(toReturn->propDescr, descr);
+
+    free(parse);
 
     return toReturn;
 }
@@ -99,6 +122,9 @@ Property *initializeProperty(char *line) {
  */
 Alarm *initializeAlarm() {
     Alarm *toReturn = malloc(sizeof(Alarm));
+
+    strcpy(toReturn->action, "");
+    toReturn->trigger = NULL;
     toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
 
     return toReturn;
@@ -112,6 +138,7 @@ Alarm *initializeAlarm() {
  */
 Event *initializeEvent() {
     Event *toReturn = malloc(sizeof(Event));
+
     toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
     toReturn->alarms = initializeList(printAlarm, deleteAlarm, compareAlarms);
 
@@ -126,6 +153,9 @@ Event *initializeEvent() {
  */
 Calendar *initializeCalendar() {
     Calendar *toReturn = malloc(sizeof(Calendar));
+
+    toReturn->version = 0.0;
+    strcpy(toReturn->prodID, "");
     toReturn->events = initializeList(printEvent, deleteEvent, compareEvents);
     toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
 

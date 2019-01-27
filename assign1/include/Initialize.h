@@ -18,7 +18,7 @@
 
 /*
  */
-void initializeDateTime(char *line, DateTime *dt);
+void initializeDateTime(const char *line, DateTime *dt);
 
 /*
  * Allocates memory for a Property structure and populates it with data retrieved from the
@@ -28,7 +28,7 @@ void initializeDateTime(char *line, DateTime *dt);
  * Returns NULL if the line contains no ':' or ';' characters.
  * Returns a pointer to the newly allocated Property otherwise.
  */
-Property *initializeProperty(char *line);
+Property *initializeProperty(const char *line);
 
 /*
  * Allocates memory for an Alarm structure, and initializes its Property List.
