@@ -306,12 +306,11 @@ int main() {
 
 
 
-    /*
     printf("\n----------PROPERTY----------\n");
-    char pd1[] = "ORGANIZER;CN=Joseph Coffa:mailto:example@webmail.ca"
-    char pd2[] = "CALSCALE:Gregorian"
-    char pd3[] = "DESCRIPTION:This is a sample description"
-    char pd4[] = "PRODID:-//Google Inc//Google Calendar 70.9054//EN"
+    char pd1[] = "ORGANIZER;CN=Joseph Coffa:mailto:example@webmail.ca";
+    char pd2[] = "CALSCALE:Gregorian";
+    char pd3[] = "DESCRIPTION:This is a sample description";
+    char pd4[] = "PRODID:-//Google Inc//Google Calendar 70.9054//EN";
     Property *prop1 = initializeProperty(pd1);
     Property *prop2 = initializeProperty(pd2);
     Property *prop3 = initializeProperty(pd3);
@@ -329,52 +328,66 @@ int main() {
     printP = printProperty((void *)prop4);
     printf("prop4: \"%s\"\n", printP);
     free(printP);
-    */
 
 
-    /*
     printf("\n----------ALARM----------\n");
+    char action[] = "This is a test action";
+    char trigger[] = "This is a test trigger";
     Alarm *alm = initializeAlarm();
-    insertFront(alm->properties, prop1);
-    insertFront(alm->properties, prop2);
-    insertFront(alm->properties, prop3);
-    insertFront(alm->properties, prop4);
+    insertFront(alm->properties, (void *)prop1);
+    insertFront(alm->properties, (void *)prop2);
+    insertFront(alm->properties, (void *)prop3);
+    insertFront(alm->properties, (void *)prop4);
+
+    strcpy(alm->action, action);
+    alm->trigger = malloc(strlen(trigger) + 1);
+    strcpy(alm->trigger, trigger);
 
     char *printA = printAlarm((void *)alm);
     printf("Alarm with 4 properties: \"%s\"\n", printA);
     free(printA);
-    */
 
 
-    /*
     printf("\n----------EVENT----------\n");
+    char uid[] = "This is a test UID";
     Event *event = initializeEvent();
+    event->creationDateTime = dt1;
+    event->startDateTime = dt2;
+    strcpy(event->UID, uid);
     insertFront(event->alarms, alm);
     
     char *printE = printEvent((void *)event);
-    printf("Event with 1 alarm (with 4 properties): \"%s\"\n", printE);
+    printf("Event with 2 date times and 1 alarm (with 4 properties): \"%s\"\n", printE);
     free(printE);
-    */
 
 
-    /*
     printf("\n----------CALENDAR----------\n");
     Calendar *calendar = initializeCalendar();
     insertFront(calendar->events, event);
 
     char *printC = printCalendar((void *)calendar);
-    printf("Calendar with 1 event (with 1 alarm (with 4 properties)): \"%s\"\n", printC);
+    printf("Calendar with 1 event (with 2 date times and 1 alarm (with 4 properties)): \"%s\"\n", printC);
     free(printC);
 
     // This should delete all of the stuff (hopefully?)
     deleteCalendar(calendar);
-    */
 
 
-    //printf("\n\n\n----------CALENDAR CREATION----------\n");
-    // TODO test createCalendar, getEvent, and getAlarm
+    printf("\n\n\n----------CALENDAR CREATION----------\n");
+    char *printGoogleCal, *printErr;
+    Calendar *googleCal;
+    ICalErrorCode err = createCalendar("/home/joseph/cis2750/a01/testFiles/googleCalendarTest.ics", &googleCal);
 
-
+    if (err != OK) {
+        printErr = printError(err);
+        printf("%s\n", printErr);
+        free(printErr);
+    } else {
+        printGoogleCal = printCalendar(googleCal);
+        printf("\n\nGoogle Calendar: \n\"%s\"\n", printGoogleCal);
+        free(printGoogleCal);
+        deleteCalendar(googleCal);
+    }
 
     return EXIT_SUCCESS;
 }
