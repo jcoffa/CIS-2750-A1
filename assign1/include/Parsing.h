@@ -45,7 +45,7 @@ bool startsWith(const char *string, const char *start);
 bool endsWith(const char *string, const char *end);
 
 /*
- * Converts every character in string to uppercase, and returns a pointer to it.
+ * Converts every character in string to uppercase
  */
 void strUpper(char *string);
 
