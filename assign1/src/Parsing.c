@@ -188,6 +188,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     char line[10000], *parse;
     ICalErrorCode error;
     bool dtStamp, dtStart, UID;
+    parse = NULL;
     dtStamp = dtStart = UID = false;
 
     printf("\tDEBUG: Started getEvent()\n");
@@ -195,8 +196,13 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     *event = initializeEvent();
 
     do { // while (strcmp(readFold(line, 10000, fp), "END:VEVENT") != 0 && !feof(fp)) {
+        if (parse != NULL) {
+            free(parse);
+        }
+
         readFold(line, 10000, fp);
         parse = strUpperCopy(line);
+        printf("\tDEBUG: in getEvent: unfolded, upper'd line: \"%s\"\n", parse);
 
         if (startsWith(parse, ";")) {
             // lines that start with ';' are comments and should be ignored
@@ -244,6 +250,8 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         }
     } while (strcmp(parse, "END:VEVENT") != 0 && !feof(fp));
 
+    free(parse);
+
     // the file can't end without hitting END:VEVENT (and also END:VCALENDAR)
     if (feof(fp)) {
         return INV_CAL;
@@ -256,13 +264,19 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     char line[10000], *parse;
     bool trigger, action;
+    parse = NULL;
     trigger = action = false;
 
     *alarm = initializeAlarm();
 
     do { // while (strcmp(readFold(line, 10000, fp), "END:VALARM") != 0 && !feof(fp)) {
+        if (parse != NULL) {
+            free(parse);
+        }
+
         readFold(line, 10000, fp);
         parse = strUpperCopy(line);
+        printf("\tDEBUG: in getAlarm: unfolded, upper'd line: \"%s\"\n", parse);
 
         if (startsWith(parse, ";")) {
             // lines that start with ';' are comments and should be ignored
@@ -293,6 +307,8 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             insertFront((*alarm)->properties, (void *)initializeProperty(parse));
         }
     } while (strcmp(parse, "END:VALARM") != 0 && !feof(fp));
+
+    free(parse);
 
     // the file can't end without hitting END:VALARM (and also END:VCALENDAR)
     if (feof(fp)) {

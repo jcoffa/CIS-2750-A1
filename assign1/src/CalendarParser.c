@@ -28,6 +28,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     FILE *fin;
     ICalErrorCode error;
     bool version, prodID, method, beginCal, endCal;
+    char *parse;
     version = prodID = method = beginCal = endCal = false;
 
     // file must end with the .ics extension
@@ -53,32 +54,47 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         printf("\tDEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
                version, prodID, method, beginCal, endCal);
         readFold(line, 10000, fin);
-        strUpper(line);
+        parse = strUpperCopy(line);
+
+        printf("\tDEBUG: in createCalendar: unfolded, capitalized line: \"%s\"\n", parse);
         
-        if (startsWith(line, ";")) {
+        if (startsWith(parse, ";")) {
             // lines starting with a semicolon (;) are comments, and
             // should be ignored
+            free(parse);
             continue;
         }
 
+        // Check if the END:VCALENDAR has been hit. If it has, and there is still more file to be read,
+        // then something has gone wrong.
+        if (endCal) {
+            deleteCalendar(*obj);
+            *obj = NULL;
+            free(parse);
+            return INV_CAL;
+        }
+
         // The first non-commented line must be BEGIN:VCALENDAR
-        if (!beginCal && !startsWith(line, "BEGIN:VCALENDAR")) {
+        if (!beginCal && !startsWith(parse, "BEGIN:VCALENDAR")) {
             printf("DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
             deleteCalendar(*obj);
             *obj = NULL;
+            free(parse);
             return INV_CAL;
         } else if (!beginCal) {
             printf("DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
             beginCal = true;
+            free(parse);
             continue;
         }
         
 
         // add properties, alarms, events, and other elements to the calendar
-        if (startsWith(line, "VERSION:")) {
+        if (startsWith(parse, "VERSION:")) {
             if (version) {
                 deleteCalendar(*obj);
                 *obj = NULL;
+                free(parse);
                 return DUP_VER;
             }
 
@@ -87,10 +103,11 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             (*obj)->version = strtof(line + 8, NULL);
             printf("DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
             version = true;
-        } else if (startsWith(line, "PRODID:")) {
+        } else if (startsWith(parse, "PRODID:")) {
             if (prodID) {
                 deleteCalendar(*obj);
                 *obj = NULL;
+                free(parse);
                 return DUP_PRODID;
             }
 
@@ -99,35 +116,49 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             strcpy((*obj)->prodID, line + 7);
             printf("DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
             prodID = true;
-        } else if (startsWith(line, "METHOD:")) {
+        } else if (startsWith(parse, "METHOD:")) {
             if (method) {
                 deleteCalendar(*obj);
+                *obj = NULL;
+                free(parse);
                 return OTHER_ERROR;
             }
 
             printf("DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
-            insertFront((*obj)->properties, (void *)initializeProperty(line));
+            Property *methodProp = initializeProperty(line);
+            if (methodProp == NULL) {
+                // something happened, and the property could not be created properly
+                deleteCalendar(*obj);
+                *obj = NULL;
+                free(parse);
+                return INV_CAL;
+            }
+
+            insertFront((*obj)->properties, (void *)methodProp);
             method = true;
-        } else if (startsWith(line, "END:VCALENDAR")) {
+        } else if (startsWith(parse, "END:VCALENDAR")) {
             endCal = true;
-        } else if (startsWith(line, "BEGIN:VCALENDAR")) {
+        } else if (startsWith(parse, "BEGIN:VCALENDAR")) {
             deleteCalendar(*obj);
             *obj = NULL;
+            free(parse);
             return INV_CAL;
-        } else if (startsWith(line, "BEGIN:VEVENT")) {
+        } else if (startsWith(parse, "BEGIN:VEVENT")) {
             Event *event;
             if ((error = getEvent(fin, &event)) != OK) {
                 // something happened, and the event could not be created properly
                 deleteCalendar(*obj);
                 *obj = NULL;
+                free(parse);
                 return error;
             }
 
             insertFront((*obj)->events, (void *)event);
-        } else if (startsWith(line, "BEGIN:VALARM")) {
+        } else if (startsWith(parse, "BEGIN:VALARM")) {
             // there can't be an alarm for an entire calendar
             deleteCalendar(*obj);
             *obj = NULL;
+            free(parse);
             return INV_ALARM;
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
@@ -136,11 +167,14 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 // something happened, and the property could not be created properly
                 deleteCalendar(*obj);
                 *obj = NULL;
+                free(parse);
                 return INV_CAL;
             }
 
             insertFront((*obj)->properties, (void *)prop);
         }
+
+        free(parse);
     }
     fclose(fin);
 

@@ -72,10 +72,12 @@ Property *initializeProperty(const char *line) {
         return NULL;
     }
 
+    printf("\tDEBUG: in initializeProperty: line = \"%s\"\n", line);
+
     // if these values are the same, then 'line' does not contain
     // any of the delimiting characters that are indicative of a property
     if (strcspn(line, delim) == strlen(line)) {
-        printf("DEBUG: in newProperty: delim characters \"%s\" were not present in the line: \"%s\"\n", \
+        printf("\tDEBUG: in initializeProperty: delim characters \"%s\" were not present in the line: \"%s\"\n", \
                delim, line);
         return NULL;
     }
@@ -83,9 +85,12 @@ Property *initializeProperty(const char *line) {
     // make a copy that can be safely modified
     parse = malloc(strlen(line) + 1);
     strcpy(parse, line);
+    printf("\tDEBUG: in initializeProperty: parse = \"%s\"\n", parse);
 
     // property name is mandatory, and cannot be empty
     token = strtok(parse, delim);
+    // FIXME parse becomes identical to token after tokenizing
+    printf("\tDEBUG: in initializeProperty: first token=\"%s\", parse=\"%s\"\n", token, parse);
     if (token != NULL) {
         strcpy(name, token);
     } else {
@@ -95,13 +100,14 @@ Property *initializeProperty(const char *line) {
 
     // sometimes a property description can be empty, so we have to account for that
     token = strtok(parse, delim);
+    printf("\tDEBUG: in initializeProperty: second token=\"%s\", parse=\"%s\"\n", token, parse);
     if (token != NULL) {
         strcpy(descr, token);
     } else {
         strcpy(descr, "");
     }
 
-    printf("DEBUG: in newProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
+    printf("\nDEBUG: in initializeProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
 
     toReturn = malloc(sizeof(Property) + strlen(descr) + 1);
     strcpy(toReturn->propName, name);
