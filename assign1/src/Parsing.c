@@ -185,7 +185,8 @@ char *readFold(char *unfolded, int size, FILE *fp) {
 
 
 ICalErrorCode getEvent(FILE *fp, Event **event) {
-    char line[2000], *parse;
+    char line[10000], *parse;
+    ICalErrorCode error;
     bool dtStamp, dtStart, UID;
     dtStamp = dtStart = UID = false;
 
@@ -193,8 +194,8 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
     *event = initializeEvent();
 
-    do { // while (strcmp(readFold(line, 20000, fp), "END:VEVENT") != 0 && !feof(fp)) {
-        readFold(line, 2000, fp);
+    do { // while (strcmp(readFold(line, 10000, fp), "END:VEVENT") != 0 && !feof(fp)) {
+        readFold(line, 10000, fp);
         parse = strUpperCopy(line);
 
         if (startsWith(parse, ";")) {
@@ -232,29 +233,35 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             strcpy((*event)->UID, parse + 4);
         } else if (startsWith(parse, "BEGIN:VALARM")) {
             Alarm *toAdd;
-            if (getAlarm(fp, &toAdd) == OK) {
-                 insertFront((*event)->alarms, (void *)toAdd);
-            } else {
-                return INV_ALARM;
+            if ((error = getAlarm(fp, &toAdd)) != OK) {
+                deleteEvent(*event);
+                return error;
             }
+
+            insertFront((*event)->alarms, (void *)toAdd);
         } else {
            insertFront((*event)->properties, (void *)initializeProperty(parse));
         }
     } while (strcmp(parse, "END:VEVENT") != 0 && !feof(fp));
+
+    // the file can't end without hitting END:VEVENT (and also END:VCALENDAR)
+    if (feof(fp)) {
+        return INV_CAL;
+    }
 
     return OK;
 }
 
 
 ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
-    char line[2000], *parse;
+    char line[10000], *parse;
     bool trigger, action;
     trigger = action = false;
 
     *alarm = initializeAlarm();
 
-    do { // while (strcmp(readFold(line, 2000, fp), "END:VALARM") != 0 && !feof(fp)) {
-        readFold(line, 2000, fp);
+    do { // while (strcmp(readFold(line, 10000, fp), "END:VALARM") != 0 && !feof(fp)) {
+        readFold(line, 10000, fp);
         parse = strUpperCopy(line);
 
         if (startsWith(parse, ";")) {
@@ -286,6 +293,11 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             insertFront((*alarm)->properties, (void *)initializeProperty(parse));
         }
     } while (strcmp(parse, "END:VALARM") != 0 && !feof(fp));
+
+    // the file can't end without hitting END:VALARM (and also END:VCALENDAR)
+    if (feof(fp)) {
+        return INV_CAL;
+    }
 
     return OK;
 }

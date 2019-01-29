@@ -26,6 +26,7 @@
 **/
 ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     FILE *fin;
+    ICalErrorCode error;
     bool version, prodID, method, beginCal, endCal;
     version = prodID = method = beginCal = endCal = false;
 
@@ -46,12 +47,12 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
     *obj = initializeCalendar();
 
-    char line[2000];
+    char line[10000];
 
     while (!feof(fin)) {
         printf("\tDEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
                version, prodID, method, beginCal, endCal);
-        readFold(line, 2000, fin);
+        readFold(line, 10000, fin);
         strUpper(line);
         
         if (startsWith(line, ";")) {
@@ -114,7 +115,15 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             *obj = NULL;
             return INV_CAL;
         } else if (startsWith(line, "BEGIN:VEVENT")) {
-            // TODO
+            Event *event;
+            if ((error = getEvent(fin, &event)) != OK) {
+                // something happened, and the event could not be created properly
+                deleteCalendar(*obj);
+                *obj = NULL;
+                return error;
+            }
+
+            insertFront((*obj)->events, (void *)event);
         } else if (startsWith(line, "BEGIN:VALARM")) {
             // there can't be an alarm for an entire calendar
             deleteCalendar(*obj);
@@ -122,7 +131,15 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             return INV_ALARM;
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
-            insertFront((*obj)->properties, (void *)initializeProperty(line));
+            Property *prop = initializeProperty(line);
+            if (prop == NULL) {
+                // something happened, and the property could not be created properly
+                deleteCalendar(*obj);
+                *obj = NULL;
+                return INV_CAL;
+            }
+
+            insertFront((*obj)->properties, (void *)prop);
         }
     }
     fclose(fin);
