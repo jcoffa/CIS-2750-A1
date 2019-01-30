@@ -51,17 +51,18 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     char line[10000];
 
     while (!feof(fin)) {
-        printf("\tDEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
+        printf("DEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
                version, prodID, method, beginCal, endCal);
         readFold(line, 10000, fin);
         parse = strUpperCopy(line);
 
-        printf("\tDEBUG: in createCalendar: unfolded, capitalized line: \"%s\"\n", parse);
+        printf("DEBUG: in createCalendar: unfolded, capitalized line: \"%s\"\n", parse);
         
         if (startsWith(parse, ";")) {
             // lines starting with a semicolon (;) are comments, and
             // should be ignored
             free(parse);
+            printf("\n");
             continue;
         }
 
@@ -175,6 +176,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         }
 
         free(parse);
+        printf("\n");
     }
     fclose(fin);
 
@@ -226,7 +228,7 @@ void deleteCalendar(Calendar* obj) {
  *@param obj - a pointer to a Calendar struct
 **/
 char* printCalendar(const Calendar* obj) {
-    char *toReturn = malloc(10000);
+    char *toReturn = malloc(20000);
 
     // check for malloc failing
     if (toReturn == NULL) {
@@ -240,10 +242,10 @@ char* printCalendar(const Calendar* obj) {
     }
 
     if (obj->events == NULL) {
-        printf("EVENTSLIST IS NULL\n");
+        printf("EVENTS LIST IS NULL\n");
     }
     if (obj->properties == NULL) {
-        printf("PROPERTIESLIST IS NULL\n");
+        printf("PROPERTIES LIST IS NULL\n");
     }
 
     char *eventListStr = toString(obj->events);
@@ -252,7 +254,7 @@ char* printCalendar(const Calendar* obj) {
     // A neat little function I found that allows for string creation using printf
     // format specifiers. Makes stringing information together in a string like this
     // much easier than using strcat() repeatedly!
-    snprintf(toReturn, 10000, "Calendar: {VERSION=%.2f, PRODID=%s, EVENTS={%s\n} End EVENTS, PROPERTIES={%s\n} End PROPERTIES}", \
+    snprintf(toReturn, 20000, "Start CALENDAR: {VERSION=%.2f, PRODID=%s, Start EVENTS={%s\n} End EVENTS, Start PROPERTIES={%s\n} End PROPERTIES}, End CALENDAR", \
              obj->version, obj->prodID, eventListStr, propertyListStr);
 
     free(eventListStr);
@@ -368,9 +370,10 @@ void deleteEvent(void* toBeDeleted) {
 /*
  */
 int compareEvents(const void* first, const void* second) {
-    // TODO
-    printf("\tDEBUG: compareEvents is unimplemented\n");
-    return 0;
+    Event *e1 = (Event *)first;
+    Event *e2 = (Event *)second;
+
+    return strcmp(e1->UID, e2->UID);
 }
 
 /*
@@ -391,7 +394,7 @@ char* printEvent(void* toBePrinted) {
     int length = strlen(createStr) + strlen(startStr) + strlen(propsStr) + strlen(alarmsStr) + 130;
     char *toReturn = malloc(length);
 
-    snprintf(toReturn, length, "EventUID: \"%s\", EventCreate: \"%s\", EventStart: \"%s\", EventProps: \"%s\", EventAlarms: \"%s\"", \
+    snprintf(toReturn, length, "EventUID: \"%s\", EventCreate: \"%s\", EventStart: \"%s\", EVENT_PROPERTIES: {%s\n} End EVENT_PROPERTIES, Start EVENT_ALARMS: {%s\n} End EVENT_ALARMS", \
              ev->UID, createStr, startStr, propsStr, alarmsStr);
 
     // Free dynamically allocated print strings
@@ -420,11 +423,13 @@ void deleteAlarm(void* toBeDeleted) {
 }
 
 /*
+ * Compares the 'action' properties of two alarms.
  */
 int compareAlarms(const void* first, const void* second) {
-    // TODO
-    printf("\tDEBUG: compareAlarms is unimplemented\n");
-    return 0;
+    Alarm *a1 = (Alarm *)first;
+    Alarm *a2 = (Alarm *)second;
+
+    return strcmp(a1->action, a2->action);
 }
 
 /*
@@ -439,16 +444,10 @@ char* printAlarm(void* toBePrinted) {
     // Lists have their own print function
     char *props = toString(al->properties);
 
-    printf("\tDEBUG: in printAlarm: strlen(al->action) = %ld\n", strlen(al->action));
-    printf("\tDEBUG: in printAlarm: strlen(al->trigger) = %ld\n", strlen(al->trigger));
-    printf("\tDEBUG: in printAlarm: strlen(props) = %ld\n", strlen(props));
-
-    printf("\n\tDEBUG: in printAlarm: toString(al->properties) = \"%s\"\n", props);
-
     int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 80;
     char *toReturn = malloc(length);
 
-    snprintf(toReturn, length, "AlarmAction: \"%s\", AlarmTrigger: \"%s\", AlarmProps: \"%s\"", \
+    snprintf(toReturn, length, "AlarmAction: \"%s\", AlarmTrigger: \"%s\", Start ALARM_PROPERTIES: {%s\n} End ALARM_PROPERTIES", \
              al->action, al->trigger, props);
 
     // Free dynamically allocated print string
@@ -470,11 +469,13 @@ void deleteProperty(void* toBeDeleted) {
 }
 
 /*
+ * Compares the names of two properties.
  */
 int compareProperties(const void* first, const void* second) {
-    // TODO
-    printf("\tDEBUG: compareProperties is unimplemented\n");
-    return 0;
+    Property *p1 = (Property *)first;
+    Property *p2 = (Property *)second;
+
+    return strcmp(p1->propName, p2->propName);
 }
 
 /*
@@ -507,11 +508,25 @@ void deleteDate(void* toBeDeleted) {
 }
 
 /*
+ * Compare dates, then times if the dates are the same, then UTC values
+ * if the times are the same as well.
  */
 int compareDates(const void* first, const void* second) {
-    // TODO
-    printf("\tDEBUG: compareDates is unimplemented\n");
-    return 0;
+    DateTime *dt1 = (DateTime *)first;
+    DateTime *dt2 = (DateTime *)second;
+    int cmp;
+
+    // if dates are the same, then compare times instead
+    if ((cmp = strcmp(dt1->date, dt2->date)) == 0) {
+        // if times are also the same, then compare UTC instead
+        if ((cmp = strcmp(dt1->time, dt2->time)) == 0) {
+            return dt1->UTC - dt2->UTC;
+        }
+        // if they are not, then return the time comparison below
+    }
+    // if they are not, then return the date comparison below
+
+    return cmp;
 }
 
 /*

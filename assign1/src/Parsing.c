@@ -148,7 +148,7 @@ char *strUpperCopy(const char *string) {
  * CRLF(whitesapce) sequences.
  * 'unfold' must be large enough to hold the entire string.
  *
- * Returns the unfolded line after removing all leading and trailing whitespace characters..
+ * Returns the unfolded line after removing all leading and trailing whitespace characters.
  */
 char *readFold(char *unfolded, int size, FILE *fp) {
     char buf[size];
@@ -195,7 +195,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
     *event = initializeEvent();
 
-    do { // while (strcmp(readFold(line, 10000, fp), "END:VEVENT") != 0 && !feof(fp)) {
+    while (!feof(fp)) {
         if (parse != NULL) {
             free(parse);
         }
@@ -204,34 +204,58 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         parse = strUpperCopy(line);
         printf("\tDEBUG: in getEvent: unfolded, upper'd line: \"%s\"\n", parse);
 
+        // This check can't be in the condition for the while loop, since
+        // iCal files are case insensitive, and therefore the case must be
+        // made uniform before checking.
+        if (strcmp(parse, "END:VEVENT") == 0) {
+            break;
+        }
+
         if (startsWith(parse, ";")) {
             // lines that start with ';' are comments and should be ignored
+            free(parse);
             continue;
         } else if (startsWith(parse, "DTSTAMP")) {
             // creation date of event
             if (dtStamp) {
                 deleteEvent(*event);
+                free(parse);
+                *event = NULL;
                 return INV_EVENT;
             }
             dtStamp = true;
 
-            DateTime stamp;
-            initializeDateTime(parse + 8, &stamp);
-            (*event)->creationDateTime = stamp;
+            DateTime *stamp;
+            stamp = initializeDateTime(parse + 8);
+
+            char *printDTS = printDate(stamp);
+            printf("DEBUG: in getEvent: created DateTime Stamp: \"%s\"\n", printDTS);
+            free(printDTS);
+
+            (*event)->creationDateTime = *stamp;
         } else if (startsWith(parse, "DTSTART")) {
             // start of event
             if (dtStart) {
                 deleteEvent(*event);
+                *event = NULL;
+                free(parse);
                 return INV_EVENT;
             }
             dtStart = true;
 
-            DateTime start;
-            initializeDateTime(parse + 8, &start);
-            (*event)->startDateTime = start;
+            DateTime *start;
+            start = initializeDateTime(parse + 8);
+
+            char *printDTStrt = printDate(start);
+            printf("DEBUG: in getEvent: created DateTime Start: \"%s\"\n", printDTStrt);
+            free(printDTStrt);
+
+            (*event)->startDateTime = *start;
         } else if (startsWith(parse, "UID")) {
             if (UID) {
                 deleteEvent(*event);
+                *event = NULL;
+                free(parse);
                 return INV_EVENT;
             }
             UID = true;
@@ -241,6 +265,8 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             Alarm *toAdd;
             if ((error = getAlarm(fp, &toAdd)) != OK) {
                 deleteEvent(*event);
+                *event = NULL;
+                free(parse);
                 return error;
             }
 
@@ -248,7 +274,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         } else {
            insertFront((*event)->properties, (void *)initializeProperty(parse));
         }
-    } while (strcmp(parse, "END:VEVENT") != 0 && !feof(fp));
+    }
 
     free(parse);
 
@@ -257,6 +283,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         return INV_CAL;
     }
 
+    printf("DEBUG: finished getEvent()\n");
     return OK;
 }
 
@@ -267,9 +294,10 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     parse = NULL;
     trigger = action = false;
 
+    printf("DEBUG: started getAlarm()\n");
     *alarm = initializeAlarm();
 
-    do { // while (strcmp(readFold(line, 10000, fp), "END:VALARM") != 0 && !feof(fp)) {
+    while (!feof(fp)) {
         if (parse != NULL) {
             free(parse);
         }
@@ -278,8 +306,17 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
         parse = strUpperCopy(line);
         printf("\tDEBUG: in getAlarm: unfolded, upper'd line: \"%s\"\n", parse);
 
+        // This check can't be in the condition for the while loop, since
+        // iCal files are case insensitive, and therefore the case must be
+        // made uniform before checking.
+        if (strcmp(parse, "END:VALARM") == 0) {
+            break;
+        }
+
         if (startsWith(parse, ";")) {
             // lines that start with ';' are comments and should be ignored
+            printf("\tDEBUG: in getEvent: line is a comment - \"%s\"\n", parse);
+            free(parse);
             continue;
         } else if (startsWith(parse, "TRIGGER")) {
             if (trigger) {
@@ -291,8 +328,8 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             trigger = true;
 
             // -8 for the characters in 'TRIGGER:', +1 for null terminator
-            (*alarm)->trigger = malloc(strlen(parse) - 7);
-            strcpy((*alarm)->trigger, parse + 8);
+            (*alarm)->trigger = malloc(strlen(line) - 7);
+            strcpy((*alarm)->trigger, line + 8);
         } else if (startsWith(parse, "ACTION")) {
             if (action) {
                 deleteAlarm(*alarm);
@@ -302,11 +339,19 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             }
             action = true;
 
-            strcpy((*alarm)->action, parse + 7);
+            strcpy((*alarm)->action, line + 7);
         } else {
-            insertFront((*alarm)->properties, (void *)initializeProperty(parse));
+            Property *prop = initializeProperty(line);
+
+            if (prop == NULL) {
+                deleteAlarm(*alarm);
+                free(parse);
+                return INV_CAL;
+            }
+
+            insertFront((*alarm)->properties, (void *)prop);
         }
-    } while (strcmp(parse, "END:VALARM") != 0 && !feof(fp));
+    }
 
     free(parse);
 
@@ -315,6 +360,7 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
         return INV_CAL;
     }
 
+    printf("DEBUG: finished getAlarm()\n");
     return OK;
 }
 

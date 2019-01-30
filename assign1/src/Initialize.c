@@ -28,6 +28,8 @@ void initializeDateTime(const char *line, DateTime *dt) {
         return;
     }
 
+    printf("\tDEBUG: in initializeDateTime: line = \"%s\"\n", line);
+
     int len = strlen(line);
 
     // the line contains no characters in 'delim', or the letter t
@@ -89,8 +91,6 @@ Property *initializeProperty(const char *line) {
 
     // property name is mandatory, and cannot be empty
     token = strtok(parse, delim);
-    // FIXME parse becomes identical to token after tokenizing
-    printf("\tDEBUG: in initializeProperty: first token=\"%s\", parse=\"%s\"\n", token, parse);
     if (token != NULL) {
         strcpy(name, token);
     } else {
@@ -99,15 +99,14 @@ Property *initializeProperty(const char *line) {
     }
 
     // sometimes a property description can be empty, so we have to account for that
-    token = strtok(parse, delim);
-    printf("\tDEBUG: in initializeProperty: second token=\"%s\", parse=\"%s\"\n", token, parse);
+    token = strtok(NULL, delim);
     if (token != NULL) {
         strcpy(descr, token);
     } else {
         strcpy(descr, "");
     }
 
-    printf("\nDEBUG: in initializeProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
+    printf("DEBUG: in initializeProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
 
     toReturn = malloc(sizeof(Property) + strlen(descr) + 1);
     strcpy(toReturn->propName, name);

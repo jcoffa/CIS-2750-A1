@@ -277,6 +277,7 @@ int main() {
 
 
 
+    /*
     printf("\n\n\n----------INITIALIZE.C TESTING----------\n");
     printf("----------DATE TIME----------\n");
     char dtD1[] = "DTSTART:19990305T150722";
@@ -303,9 +304,13 @@ int main() {
     printDT = printDate((void *)&dt3);
     printf("dt3: \"%s\"\n", printDT);
     free(printDT);
+    */
 
 
 
+
+
+    /*
     printf("\n----------PROPERTY----------\n");
     char pd1[] = "ORGANIZER;CN=Joseph Coffa:mailto:example@webmail.ca";
     char pd2[] = "CALSCALE:Gregorian";
@@ -328,8 +333,13 @@ int main() {
     printP = printProperty((void *)prop4);
     printf("prop4: \"%s\"\n", printP);
     free(printP);
+    */
 
 
+
+
+
+    /*
     printf("\n----------ALARM----------\n");
     char action[] = "This is a test action";
     char trigger[] = "This is a test trigger";
@@ -346,8 +356,13 @@ int main() {
     char *printA = printAlarm((void *)alm);
     printf("Alarm with 4 properties: \"%s\"\n", printA);
     free(printA);
+    */
 
 
+
+
+
+    /*
     printf("\n----------EVENT----------\n");
     char uid[] = "This is a test UID";
     Event *event = initializeEvent();
@@ -359,8 +374,13 @@ int main() {
     char *printE = printEvent((void *)event);
     printf("Event with 2 date times and 1 alarm (with 4 properties): \"%s\"\n", printE);
     free(printE);
+    */
 
 
+
+
+
+    /*
     printf("\n----------CALENDAR----------\n");
     Calendar *calendar = initializeCalendar();
     insertFront(calendar->events, event);
@@ -371,6 +391,10 @@ int main() {
 
     // This should delete all of the stuff (hopefully?)
     deleteCalendar(calendar);
+    */
+
+
+
 
 
     printf("\n\n\n----------CALENDAR CREATION----------\n");
@@ -380,7 +404,7 @@ int main() {
 
     if (err != OK) {
         printErr = printError(err);
-        printf("%s\n", printErr);
+        printf("\n\nAn error occurred: %s\n", printErr);
         free(printErr);
     } else {
         printGoogleCal = printCalendar(googleCal);
@@ -388,6 +412,10 @@ int main() {
         free(printGoogleCal);
         deleteCalendar(googleCal);
     }
+
+
+
+
 
     return EXIT_SUCCESS;
 }
