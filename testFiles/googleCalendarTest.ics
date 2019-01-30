@@ -8,6 +8,8 @@ X-WR-TIMEZONE:America/Toronto
 X-WR-CALDESC:This is a useless calendar that has random\, meaningless event
  s. It is to be used only for seeing what an iCalendar file looks like\, and
   to practice parsing one.
+; XXX in this assignment, we are using a simpler version of an iCalendar
+; specification. VTIMEZONEs (along with to-do's and journals) are not valid
 ;BEGIN:VTIMEZONE
 ;TZID:America/Toronto
 ;X-LIC-LOCATION:America/Toronto
@@ -31,7 +33,9 @@ DTSTART:20190204T140000Z
 DTSTAMP:20190126T230152Z
 UID:0tt6dig5p9ieea8q5fvo3r5nae@google.com
 CREATED:20190126T225544Z
-DESCRIPTION:
+; XXX In this course, an empty property is considered invalid.
+; Apparently google does not agree with us on this!
+;DESCRIPTION:
 LAST-MODIFIED:20190126T225634Z
 LOCATION:Moodle
 SEQUENCE:0
@@ -56,7 +60,9 @@ DTSTAMP:20190126T230152Z
 UID:090pdkob9safv3isaokqiu3alu@google.com
 CLASS:PUBLIC
 CREATED:20190126T225840Z
-DESCRIPTION:
+; XXX In this course, an empty property is considered invalid.
+; Apparently google does not agree with us on this!
+;DESCRIPTION:
 LAST-MODIFIED:20190126T225918Z
 LOCATION:Home\, sweet home
 SEQUENCE:1
@@ -78,9 +84,13 @@ RRULE:FREQ=DAILY;COUNT=5
 DTSTAMP:20190126T230152Z
 UID:1dbvuma0apm3h47ade8njfe59l@google.com
 CREATED:20190126T230021Z
-DESCRIPTION:
+; XXX In this course, an empty property is considered invalid.
+; Apparently google does not agree with us on this!
+;DESCRIPTION:
 LAST-MODIFIED:20190126T230021Z
-LOCATION:
+; XXX In this course, an empty property is considered invalid.
+; Apparently google does not agree with us on this!
+;LOCATION:
 SEQUENCE:0
 STATUS:CONFIRMED
 SUMMARY:Walk the Dog
