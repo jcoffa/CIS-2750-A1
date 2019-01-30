@@ -31,8 +31,8 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     char *parse;
     version = prodID = method = beginCal = endCal = false;
 
-    // file must end with the .ics extension
-    if (!endsWith(fileName, ".ics")) {
+    // filename can't be null or an empty string, and must end with the '.ics' extension
+    if (fileName == NULL || strcmp(fileName, "") == 0 || !endsWith(fileName, ".ics")) {
         *obj = NULL;
         return INV_FILE;
     }
@@ -49,7 +49,6 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     *obj = initializeCalendar();
 
     char line[10000];
-
     while (!feof(fin)) {
         printf("DEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
                version, prodID, method, beginCal, endCal);
@@ -157,6 +156,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             insertFront((*obj)->events, (void *)event);
         } else if (startsWith(parse, "BEGIN:VALARM")) {
             // there can't be an alarm for an entire calendar
+            printf("DEBUG: in createCalendar: found an alarm not in an event\n");
             deleteCalendar(*obj);
             *obj = NULL;
             free(parse);
@@ -444,7 +444,7 @@ char* printAlarm(void* toBePrinted) {
     // Lists have their own print function
     char *props = toString(al->properties);
 
-    int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 80;
+    int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 100;
     char *toReturn = malloc(length);
 
     snprintf(toReturn, length, "AlarmAction: \"%s\", AlarmTrigger: \"%s\", Start ALARM_PROPERTIES: {%s\n} End ALARM_PROPERTIES", \

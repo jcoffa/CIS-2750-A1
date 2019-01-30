@@ -19,7 +19,7 @@
  * which should come from an iCalendar file.
  */
 void initializeDateTime(const char *line, DateTime *dt) {
-    char data[200];
+    char data[300];
     const char delimData[] = ";:";
     const char delimTime[] = "Tt";
 
@@ -28,11 +28,11 @@ void initializeDateTime(const char *line, DateTime *dt) {
         return;
     }
 
-    printf("\tDEBUG: in initializeDateTime: line = \"%s\"\n", line);
-
     int len = strlen(line);
 
-    // the line contains no characters in 'delim', or the letter t
+    printf("\tDEBUG: in initializeDateTime: line (length of %d) = \"%s\"\n", len, line);
+
+    // the line contains no characters in 'delim', or the letter 't'
     // which is necessary to differentiate the date and time parts of a DateTime
     if ((strcspn(line, delimData) == len) || (strcspn(line, delimTime) == len)) {
         dt = NULL;
@@ -47,6 +47,7 @@ void initializeDateTime(const char *line, DateTime *dt) {
     (dt->date)[8] = '\0';   // strncpy does not automatically null-terminate
 
     // the next 6 characters after the "T" character is the time
+    printf("\tDEBUG: in initializeDateTime, data + strcspn(data, \"%s\") = \"%s\"\n", delimTime, data + strcspn(data, delimTime)+1);
     strncpy(dt->time, data + strcspn(data, delimTime)+1, 6);
     (dt->time)[7] = '\0';   // strncpy does not automatically null-terminate
 
@@ -62,57 +63,45 @@ void initializeDateTime(const char *line, DateTime *dt) {
  * Returns a pointer to the newly allocated Property otherwise.
  */
 Property *initializeProperty(const char *line) {
-    char name[200], descr[2000], *parse, *token;
+    char name[200], descr[2000];
     const char delim[] = ";:";
     Property *toReturn;
+    int firstDelim, length;
 
     if (line == NULL) {
         return NULL;
     }
 
-    if (strlen(line) == 0) {
+    if ((length = strlen(line)) == 0) {
         return NULL;
     }
 
     printf("\tDEBUG: in initializeProperty: line = \"%s\"\n", line);
 
+    firstDelim = strcspn(line, delim);
+
     // if these values are the same, then 'line' does not contain
     // any of the delimiting characters that are indicative of a property
-    if (strcspn(line, delim) == strlen(line)) {
+    if (firstDelim == length) {
         printf("\tDEBUG: in initializeProperty: delim characters \"%s\" were not present in the line: \"%s\"\n", \
                delim, line);
         return NULL;
     }
 
-    // make a copy that can be safely modified
-    parse = malloc(strlen(line) + 1);
-    strcpy(parse, line);
-    printf("\tDEBUG: in initializeProperty: parse = \"%s\"\n", parse);
+    strncpy(name, line, firstDelim);
+    name[firstDelim] = '\0';    // strncpy does not automatically null-terminate
 
-    // property name is mandatory, and cannot be empty
-    token = strtok(parse, delim);
-    if (token != NULL) {
-        strcpy(name, token);
-    } else {
-        free(parse);
-        return NULL;
-    }
-
-    // sometimes a property description can be empty, so we have to account for that
-    token = strtok(NULL, delim);
-    if (token != NULL) {
-        strcpy(descr, token);
-    } else {
-        strcpy(descr, "");
-    }
+    strcpy(descr, line + firstDelim + 1);
 
     printf("DEBUG: in initializeProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
 
     toReturn = malloc(sizeof(Property) + strlen(descr) + 1);
+    if (toReturn == NULL) {
+        return NULL;
+    }
+
     strcpy(toReturn->propName, name);
     strcpy(toReturn->propDescr, descr);
-
-    free(parse);
 
     return toReturn;
 }
@@ -127,6 +116,9 @@ Property *initializeProperty(const char *line) {
  */
 Alarm *initializeAlarm() {
     Alarm *toReturn = malloc(sizeof(Alarm));
+    if (toReturn == NULL) {
+        return NULL;
+    }
 
     strcpy(toReturn->action, "");
     toReturn->trigger = NULL;
@@ -143,6 +135,9 @@ Alarm *initializeAlarm() {
  */
 Event *initializeEvent() {
     Event *toReturn = malloc(sizeof(Event));
+    if (toReturn == NULL) {
+        return NULL;
+    }
 
     toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
     toReturn->alarms = initializeList(printAlarm, deleteAlarm, compareAlarms);
@@ -158,6 +153,9 @@ Event *initializeEvent() {
  */
 Calendar *initializeCalendar() {
     Calendar *toReturn = malloc(sizeof(Calendar));
+    if (toReturn == NULL) {
+        return NULL;
+    }
 
     toReturn->version = 0.0;
     strcpy(toReturn->prodID, "");
