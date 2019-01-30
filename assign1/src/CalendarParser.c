@@ -46,7 +46,9 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         return INV_FILE;
     }
 
-    *obj = initializeCalendar();
+    if ((error = initializeCalendar(obj)) != OK) {
+        return error;
+    }
 
     char line[10000];
     while (!feof(fin)) {
@@ -125,8 +127,8 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             }
 
             printf("DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
-            Property *methodProp = initializeProperty(line);
-            if (methodProp == NULL) {
+            Property *methodProp;
+            if ((error = initializeProperty(line, &methodProp)) != OK) {
                 // something happened, and the property could not be created properly
                 deleteCalendar(*obj);
                 *obj = NULL;
@@ -163,8 +165,8 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             return INV_ALARM;
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
-            Property *prop = initializeProperty(line);
-            if (prop == NULL) {
+            Property *prop;
+            if ((error = initializeProperty(line, &prop)) != OK) {
                 // something happened, and the property could not be created properly
                 deleteCalendar(*obj);
                 *obj = NULL;

@@ -193,7 +193,9 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
     printf("\tDEBUG: Started getEvent()\n");
 
-    *event = initializeEvent();
+    if ((error = initializeEvent(event)) != OK) {
+        return error;
+    }
 
     while (!feof(fp)) {
         if (parse != NULL) {
@@ -215,20 +217,27 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         if (startsWith(parse, ";")) {
             // lines that start with ';' are comments and should be ignored
             free(parse);
+            parse = NULL;
             continue;
         } else if (startsWith(parse, "DTSTAMP")) {
             // creation date of event
             if (dtStamp) {
                 printf("\tDEBUG: in getEvent: found a second instance of a DTSTAMP property\n");
                 deleteEvent(*event);
-                free(parse);
                 *event = NULL;
+                free(parse);
                 return INV_EVENT;
             }
             dtStamp = true;
 
             DateTime stamp;
-            initializeDateTime(line, &stamp);
+            if ((error = initializeDateTime(line, &stamp)) != OK) {
+                printf("DEBUG: in getEvent: initializeDateTime failed somehow\n");
+                deleteEvent(*event);
+                *event = NULL;
+                free(parse);
+                return error;
+            }
 
             char *printDTS = printDate(&stamp);
             printf("DEBUG: in getEvent: created DateTime Stamp: \"%s\"\n", printDTS);
@@ -247,7 +256,13 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             dtStart = true;
 
             DateTime start;
-            initializeDateTime(line, &start);
+            if ((error = initializeDateTime(line, &start)) != OK) {
+                printf("DEBUG: in getEvent: initializeDateTime failed somehow\n");
+                deleteEvent(*event);
+                *event = NULL;
+                free(parse);
+                return error;
+            }
 
             char *printDTStrt = printDate(&start);
             printf("DEBUG: in getEvent: created DateTime Start: \"%s\"\n", printDTStrt);
@@ -277,7 +292,14 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
             insertFront((*event)->alarms, (void *)toAdd);
         } else {
-            Property *prop = initializeProperty(line);
+            Property *prop;
+            if ((error = initializeProperty(line, &prop)) != OK) {
+                printf("DEBUG: in getEvent: initializeProperty failed somehow\n");
+                deleteEvent(*event);
+                *event = NULL;
+                free(parse);
+                return error;
+            }
 
             if (prop == NULL) {
                 printf("\tDEBUG: in getEvent: encountered error when initializing property\n");
@@ -307,11 +329,16 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     char line[10000], *parse;
     bool trigger, action;
+    ICalErrorCode error;
     parse = NULL;
     trigger = action = false;
 
     printf("DEBUG: started getAlarm()\n");
-    *alarm = initializeAlarm();
+    if ((error = initializeAlarm(alarm)) != OK) {
+        printf("DEBUG: in getAlarm: initializeAlarm() failed somehow\n");
+        *alarm = NULL;
+        return error;
+    }
 
     while (!feof(fp)) {
         if (parse != NULL) {
@@ -360,14 +387,13 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             strcpy((*alarm)->action, line + 7);
             printf("\tDEBUG: in getAlarm: action = \"%s\"\n", (*alarm)->action);
         } else {
-            Property *prop = initializeProperty(line);
-
-            if (prop == NULL) {
-                printf("\tDEBUG: in getAlarm: encountered error when creating a property\n");
+            Property *prop;
+            if ((error = initializeProperty(line, &prop)) != OK) {
+                printf("DEBUG: in getAlarm: initializeProperty() failed somehow\n");
                 deleteAlarm(*alarm);
                 *alarm = NULL;
                 free(parse);
-                return INV_CAL;
+                return error;
             }
 
             insertFront((*alarm)->properties, (void *)prop);

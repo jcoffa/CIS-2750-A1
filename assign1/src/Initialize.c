@@ -10,22 +10,18 @@
 #include "Initialize.h"
 #include "Parsing.h"
 
-
-// TODO return ICaleErrorCodes and pass in address of structure to function
-// and allocate memory there (like in createCalendar)
-
 /*
  * Populates the DateTime structure 'dt' with data retrieved from the string 'line',
  * which should come from an iCalendar file.
  */
-void initializeDateTime(const char *line, DateTime *dt) {
+ICalErrorCode initializeDateTime(const char *line, DateTime *dt) {
     char data[300];
     const char delimData[] = ";:";
     const char delimTime[] = "Tt";
 
     if (line == NULL) {
         dt = NULL;
-        return;
+        return OTHER_ERROR;
     }
 
     int len = strlen(line);
@@ -36,7 +32,7 @@ void initializeDateTime(const char *line, DateTime *dt) {
     // which is necessary to differentiate the date and time parts of a DateTime
     if ((strcspn(line, delimData) == len) || (strcspn(line, delimTime) == len)) {
         dt = NULL;
-        return;
+        return INV_DT;
     }
 
     // ignore everything before (and including) the property name and ':' or ';'
@@ -52,6 +48,8 @@ void initializeDateTime(const char *line, DateTime *dt) {
     (dt->time)[6] = '\0';   // strncpy does not automatically null-terminate
 
     dt->UTC = (endsWith(line, "Z") || endsWith(line, "z"));
+
+    return OK;
 }
 
 /*
@@ -62,18 +60,17 @@ void initializeDateTime(const char *line, DateTime *dt) {
  * Returns NULL if the line contains no ':' or ';' characters.
  * Returns a pointer to the newly allocated Property otherwise.
  */
-Property *initializeProperty(const char *line) {
+ICalErrorCode initializeProperty(const char *line, Property **prop) {
     char name[200], descr[2000];
     const char delim[] = ";:";
-    Property *toReturn;
     int firstDelim, length;
 
     if (line == NULL) {
-        return NULL;
+        return OTHER_ERROR;
     }
 
     if ((length = strlen(line)) == 0) {
-        return NULL;
+        return OTHER_ERROR;
     }
 
     printf("\tDEBUG: in initializeProperty: line = \"%s\"\n", line);
@@ -85,7 +82,8 @@ Property *initializeProperty(const char *line) {
     if (firstDelim == length) {
         printf("\tDEBUG: in initializeProperty: delim characters \"%s\" were not present in the line: \"%s\"\n", \
                delim, line);
-        return NULL;
+        // DateTime is malformed
+        return INV_DT;
     }
 
     strncpy(name, line, firstDelim);
@@ -93,17 +91,23 @@ Property *initializeProperty(const char *line) {
 
     strcpy(descr, line + firstDelim + 1);
 
-    printf("DEBUG: in initializeProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
-
-    toReturn = malloc(sizeof(Property) + strlen(descr) + 1);
-    if (toReturn == NULL) {
-        return NULL;
+    if (strlen(name) == 0 || strlen(descr) == 0) {
+        // name or property value is missing
+        return INV_CAL;
     }
 
-    strcpy(toReturn->propName, name);
-    strcpy(toReturn->propDescr, descr);
+    printf("DEBUG: in initializeProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
 
-    return toReturn;
+    *prop = malloc(sizeof(Property) + strlen(descr) + 1);
+    if (*prop == NULL) {
+        // malloc failed
+        return OTHER_ERROR;
+    }
+
+    strcpy((*prop)->propName, name);
+    strcpy((*prop)->propDescr, descr);
+
+    return OK;
 }
 
 /*
@@ -114,17 +118,23 @@ Property *initializeProperty(const char *line) {
  * to perfectly fit the length of its string.
  * Returns a pointer to the newly allocated Alarm structure.
  */
-Alarm *initializeAlarm() {
-    Alarm *toReturn = malloc(sizeof(Alarm));
-    if (toReturn == NULL) {
-        return NULL;
+ICalErrorCode initializeAlarm(Alarm **alm) {
+    *alm = malloc(sizeof(Alarm));
+    if (*alm == NULL) {
+        // malloc failed
+        return OTHER_ERROR;
     }
 
-    strcpy(toReturn->action, "");
-    toReturn->trigger = NULL;
-    toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
+    strcpy((*alm)->action, "");
+    (*alm)->trigger = NULL;
+    (*alm)->properties = initializeList(printProperty, deleteProperty, compareProperties);
 
-    return toReturn;
+    if ((*alm)->properties == NULL) {
+        // list initialization failed
+        return OTHER_ERROR;
+    }
+
+    return OK;
 }
 
 /*
@@ -133,16 +143,22 @@ Alarm *initializeAlarm() {
  * must be entered manually.
  * Returns a pointer to the newly allocated Event structure.
  */
-Event *initializeEvent() {
-    Event *toReturn = malloc(sizeof(Event));
-    if (toReturn == NULL) {
-        return NULL;
+ICalErrorCode initializeEvent(Event **evt) {
+    *evt = malloc(sizeof(Event));
+    if (*evt == NULL) {
+        // malloc failed
+        return OTHER_ERROR;
     }
 
-    toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
-    toReturn->alarms = initializeList(printAlarm, deleteAlarm, compareAlarms);
+    (*evt)->properties = initializeList(printProperty, deleteProperty, compareProperties);
+    (*evt)->alarms = initializeList(printAlarm, deleteAlarm, compareAlarms);
 
-    return toReturn;
+    if ((*evt)->properties == NULL || (*evt)->alarms == NULL) {
+        // list initialization failed
+        return OTHER_ERROR;
+    }
+
+    return OK;
 }
 
 /*
@@ -151,17 +167,23 @@ Event *initializeEvent() {
  * must be entered manually.
  * Returns a pointer to the newly allocated Calendar structure.
  */
-Calendar *initializeCalendar() {
-    Calendar *toReturn = malloc(sizeof(Calendar));
-    if (toReturn == NULL) {
-        return NULL;
+ICalErrorCode initializeCalendar(Calendar **cal) {
+    *cal = malloc(sizeof(Calendar));
+    if (*cal == NULL) {
+        // malloc failed
+        return OTHER_ERROR;
     }
 
-    toReturn->version = 0.0;
-    strcpy(toReturn->prodID, "");
-    toReturn->events = initializeList(printEvent, deleteEvent, compareEvents);
-    toReturn->properties = initializeList(printProperty, deleteProperty, compareProperties);
+    (*cal)->version = 0.0;
+    strcpy((*cal)->prodID, "");
+    (*cal)->events = initializeList(printEvent, deleteEvent, compareEvents);
+    (*cal)->properties = initializeList(printProperty, deleteProperty, compareProperties);
 
-    return toReturn;
+    if ((*cal)->events == NULL || (*cal)->properties == NULL) {
+        // list initialization failed
+        return OTHER_ERROR;
+    }
+
+    return OK;
 }
 
