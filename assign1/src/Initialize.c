@@ -49,7 +49,7 @@ void initializeDateTime(const char *line, DateTime *dt) {
     // the next 6 characters after the "T" character is the time
     printf("\tDEBUG: in initializeDateTime, data + strcspn(data, \"%s\") = \"%s\"\n", delimTime, data + strcspn(data, delimTime)+1);
     strncpy(dt->time, data + strcspn(data, delimTime)+1, 6);
-    (dt->time)[7] = '\0';   // strncpy does not automatically null-terminate
+    (dt->time)[6] = '\0';   // strncpy does not automatically null-terminate
 
     dt->UTC = (endsWith(line, "Z") || endsWith(line, "z"));
 }
