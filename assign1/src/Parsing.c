@@ -209,7 +209,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     parse = NULL;
     dtStamp = dtStart = UID = false;
 
-    printf("\tDEBUG: Started getEvent()\n");
+    fprintf(stderr, "\tDEBUG: Started getEvent()\n");
 
     if ((error = initializeEvent(event)) != OK) {
         return error;
@@ -222,13 +222,13 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
         readFold(line, 10000, fp);
         parse = strUpperCopy(line);
-        printf("\tDEBUG: in getEvent: unfolded, upper'd line: \"%s\"\n", parse);
+        fprintf(stderr, "\tDEBUG: in getEvent: unfolded, upper'd line: \"%s\"\n", parse);
 
         // This check can't be in the condition for the while loop, since
         // iCal files are case insensitive, and therefore the case must be
         // made uniform before checking.
         if (startsWith(parse, "END:VEVENT")) {
-            printf("\tDEBUG: in getEvent: line containd END:VEVENT\n");
+            fprintf(stderr, "\tDEBUG: in getEvent: line containd END:VEVENT\n");
             break;
         }
 
@@ -240,7 +240,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         } else if (startsWith(parse, "DTSTAMP")) {
             // creation date of event
             if (dtStamp) {
-                printf("\tDEBUG: in getEvent: found a second instance of a DTSTAMP property\n");
+                fprintf(stderr, "\tDEBUG: in getEvent: found a second instance of a DTSTAMP property\n");
                 deleteEvent(*event);
                 *event = NULL;
                 free(parse);
@@ -250,7 +250,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
             DateTime stamp;
             if ((error = initializeDateTime(line, &stamp)) != OK) {
-                printf("DEBUG: in getEvent: initializeDateTime failed somehow\n");
+                fprintf(stderr, "DEBUG: in getEvent: initializeDateTime failed somehow\n");
                 deleteEvent(*event);
                 *event = NULL;
                 free(parse);
@@ -258,14 +258,14 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             }
 
             char *printDTS = printDate(&stamp);
-            printf("DEBUG: in getEvent: created DateTime Stamp: \"%s\"\n", printDTS);
+            fprintf(stderr, "DEBUG: in getEvent: created DateTime Stamp: \"%s\"\n", printDTS);
             free(printDTS);
 
             (*event)->creationDateTime = stamp;
         } else if (startsWith(parse, "DTSTART")) {
             // start of event
             if (dtStart) {
-                printf("\tDEBUG: in getEvent: found a second instance of a DTSTART property\n");
+                fprintf(stderr, "\tDEBUG: in getEvent: found a second instance of a DTSTART property\n");
                 deleteEvent(*event);
                 *event = NULL;
                 free(parse);
@@ -275,7 +275,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
             DateTime start;
             if ((error = initializeDateTime(line, &start)) != OK) {
-                printf("DEBUG: in getEvent: initializeDateTime failed somehow\n");
+                fprintf(stderr, "DEBUG: in getEvent: initializeDateTime failed somehow\n");
                 deleteEvent(*event);
                 *event = NULL;
                 free(parse);
@@ -283,13 +283,13 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             }
 
             char *printDTStrt = printDate(&start);
-            printf("DEBUG: in getEvent: created DateTime Start: \"%s\"\n", printDTStrt);
+            fprintf(stderr, "DEBUG: in getEvent: created DateTime Start: \"%s\"\n", printDTStrt);
             free(printDTStrt);
 
             (*event)->startDateTime = start;
         } else if (startsWith(parse, "UID")) {
             if (UID) {
-                printf("\tDEBUG: in getEvent: encountered a second UID property\n");
+                fprintf(stderr, "\tDEBUG: in getEvent: encountered a second UID property\n");
                 deleteEvent(*event);
                 *event = NULL;
                 free(parse);
@@ -301,7 +301,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         } else if (startsWith(parse, "BEGIN:VALARM")) {
             Alarm *toAdd;
             if ((error = getAlarm(fp, &toAdd)) != OK) {
-                printf("\tDEBUG: in getEvent: encountered error when getting an Alarm\n");
+                fprintf(stderr, "\tDEBUG: in getEvent: encountered error when getting an Alarm\n");
                 deleteEvent(*event);
                 *event = NULL;
                 free(parse);
@@ -312,7 +312,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         } else {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
-                printf("DEBUG: in getEvent: initializeProperty failed somehow\n");
+                fprintf(stderr, "DEBUG: in getEvent: initializeProperty failed somehow\n");
                 deleteEvent(*event);
                 *event = NULL;
                 free(parse);
@@ -320,7 +320,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             }
 
             if (prop == NULL) {
-                printf("\tDEBUG: in getEvent: encountered error when initializing property\n");
+                fprintf(stderr, "\tDEBUG: in getEvent: encountered error when initializing property\n");
                 deleteEvent(*event);
                 *event = NULL;
                 free(parse);
@@ -335,11 +335,11 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
     // the file can't end without hitting END:VEVENT (and also END:VCALENDAR)
     if (feof(fp)) {
-        printf("DEBUG: in getEvent: hit end of file before reaching an END:VEVENT\n");
+        fprintf(stderr, "DEBUG: in getEvent: hit end of file before reaching an END:VEVENT\n");
         return INV_CAL;
     }
 
-    printf("DEBUG: finished getEvent() successfully\n");
+    fprintf(stderr, "DEBUG: finished getEvent() successfully\n");
     return OK;
 }
 
@@ -351,9 +351,9 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     parse = NULL;
     trigger = action = false;
 
-    printf("DEBUG: started getAlarm()\n");
+    fprintf(stderr, "DEBUG: started getAlarm()\n");
     if ((error = initializeAlarm(alarm)) != OK) {
-        printf("DEBUG: in getAlarm: initializeAlarm() failed somehow\n");
+        fprintf(stderr, "DEBUG: in getAlarm: initializeAlarm() failed somehow\n");
         *alarm = NULL;
         return error;
     }
@@ -365,7 +365,7 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
 
         readFold(line, 10000, fp);
         parse = strUpperCopy(line);
-        printf("\tDEBUG: in getAlarm: unfolded, upper'd line: \"%s\"\n", parse);
+        fprintf(stderr, "\tDEBUG: in getAlarm: unfolded, upper'd line: \"%s\"\n", parse);
 
         // This check can't be in the condition for the while loop, since
         // iCal files are case insensitive, and therefore the case must be
@@ -380,7 +380,7 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             continue;
         } else if (startsWith(parse, "TRIGGER")) {
             if (trigger) {
-                printf("\tDEBUG: in getAlarm: found a second instance of a TRIGGER property\n");
+                fprintf(stderr, "\tDEBUG: in getAlarm: found a second instance of a TRIGGER property\n");
                 deleteAlarm(*alarm);
                 *alarm = NULL;
                 free(parse);
@@ -391,10 +391,10 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             // -8 for the characters in 'TRIGGER:', +1 for null terminator
             (*alarm)->trigger = malloc(strlen(line) - 7);
             strcpy((*alarm)->trigger, line + 8);
-            printf("\tDEBUG: in getAlarm: trigger = \"%s\"\n", (*alarm)->trigger);
+            fprintf(stderr, "\tDEBUG: in getAlarm: trigger = \"%s\"\n", (*alarm)->trigger);
         } else if (startsWith(parse, "ACTION")) {
             if (action) {
-                printf("\tDEBUG: in getAlarm: found a second instance of a ACTION property\n");
+                fprintf(stderr, "\tDEBUG: in getAlarm: found a second instance of a ACTION property\n");
                 deleteAlarm(*alarm);
                 *alarm = NULL;
                 free(parse);
@@ -403,11 +403,11 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             action = true;
 
             strcpy((*alarm)->action, line + 7);
-            printf("\tDEBUG: in getAlarm: action = \"%s\"\n", (*alarm)->action);
+            fprintf(stderr, "\tDEBUG: in getAlarm: action = \"%s\"\n", (*alarm)->action);
         } else {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
-                printf("DEBUG: in getAlarm: initializeProperty() failed somehow\n");
+                fprintf(stderr, "DEBUG: in getAlarm: initializeProperty() failed somehow\n");
                 deleteAlarm(*alarm);
                 *alarm = NULL;
                 free(parse);
@@ -422,11 +422,11 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
 
     // the file can't end without hitting END:VALARM (and also END:VCALENDAR)
     if (feof(fp)) {
-        printf("DEBUG: in getAlarm: hit end of file before reaching an END:VALARM\n");
+        fprintf(stderr, "DEBUG: in getAlarm: hit end of file before reaching an END:VALARM\n");
         return INV_CAL;
     }
 
-    printf("DEBUG: finished getAlarm() successfully\n");
+    fprintf(stderr, "DEBUG: finished getAlarm() successfully\n");
     return OK;
 }
 

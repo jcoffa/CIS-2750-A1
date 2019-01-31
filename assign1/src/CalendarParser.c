@@ -52,12 +52,12 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
     char line[10000];
     while (!feof(fin)) {
-        printf("DEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
+        fprintf(stderr, "DEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
                version, prodID, method, beginCal, endCal);
         readFold(line, 10000, fin);
         parse = strUpperCopy(line);
 
-        printf("DEBUG: in createCalendar: unfolded, capitalized line: \"%s\"\n", parse);
+        fprintf(stderr, "DEBUG: in createCalendar: unfolded, capitalized line: \"%s\"\n", parse);
         
         if (startsWith(parse, ";")) {
             // lines starting with a semicolon (;) are comments, and
@@ -76,11 +76,11 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
         // The first non-commented line must be BEGIN:VCALENDAR
         if (!beginCal && !startsWith(parse, "BEGIN:VCALENDAR")) {
-            printf("DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
+            fprintf(stderr, "DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
             cleanup(obj, parse, fin);
             return INV_CAL;
         } else if (!beginCal) {
-            printf("DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
+            fprintf(stderr, "DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
             beginCal = true;
             free(parse);
             continue;
@@ -94,7 +94,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 return DUP_VER;
             }
 
-            printf("DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
+            fprintf(stderr, "DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
             char *endptr;
             // +8 to start conversion after the 'VERSION:' part of the string
             (*obj)->version = strtof(line + 8, &endptr);
@@ -106,7 +106,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 return INV_VER;
             }
 
-            printf("DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
+            fprintf(stderr, "DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
             version = true;
         } else if (startsWith(parse, "PRODID:")) {
             if (prodID) {
@@ -121,9 +121,9 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             }
 
             // +7 to only copy characters past 'PRODID:' part of the string
-            printf("DEBUG: in createCalendar: found PRODID line: \"%s\"\n", line);
+            fprintf(stderr, "DEBUG: in createCalendar: found PRODID line: \"%s\"\n", line);
             strcpy((*obj)->prodID, line + 7);
-            printf("DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
+            fprintf(stderr, "DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
             prodID = true;
         } else if (startsWith(parse, "METHOD:")) {
             if (method) {
@@ -137,7 +137,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 return INV_CAL;
             }
 
-            printf("DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
+            fprintf(stderr, "DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
             Property *methodProp;
             if ((error = initializeProperty(line, &methodProp)) != OK) {
                 // something happened, and the property could not be created properly
@@ -163,11 +163,11 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             insertFront((*obj)->events, (void *)event);
         } else if (startsWith(parse, "BEGIN:VALARM")) {
             // there can't be an alarm for an entire calendar
-            printf("DEBUG: in createCalendar: found an alarm not in an event\n");
+            fprintf(stderr, "DEBUG: in createCalendar: found an alarm not in an event\n");
             cleanup(obj, parse, fin);
             return INV_ALARM;
         } else {
-            printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
+            fprintf(stderr, "DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
                 // something happened, and the property could not be created properly
