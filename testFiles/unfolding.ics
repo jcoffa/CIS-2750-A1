@@ -1,8 +1,0 @@
-BEGIN:VCALENDAR
-PRODID:-//Google Inc//Google Calendar 70.9054//EN
-VERSION:2.0
-CALSCALE:GREGORIAN
-DESCRIPTION:This is a simple, yet honestly quite useful, calendar that is 
- used primarily to test line unfolding.
-  It is quite important!
-END:VCALENDAR
