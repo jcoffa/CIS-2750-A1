@@ -7,10 +7,28 @@
  *  Parsing.c                       *
  ************************************/
 
-#include <stdio.h>
-
 #include "Parsing.h"
 
+
+/*
+ * To be used during createCalendar when something goes wrong or if the calendar
+ * is determined to be invalid. Memory needs to be freed, files need to be closed,
+ * and structures set to NULL.
+ */
+void cleanup(Calendar **toDelete, char *upperCopy, FILE *toClose) {
+    if (toDelete != NULL) {
+        deleteCalendar(*toDelete);
+        *toDelete = NULL;
+    }
+
+    if (upperCopy != NULL) {
+        free(upperCopy);
+    }
+
+    if (toClose != NULL) {
+        fclose(toClose);
+    }
+}
 
 /*
  * Removes all leading and trailing whitespace from the given string.
