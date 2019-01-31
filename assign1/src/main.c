@@ -398,21 +398,91 @@ int main() {
 
 
     printf("\n\n\n----------CALENDAR CREATION----------\n");
-    char *printGoogleCal, *printErr;
-    Calendar *googleCal;
-    ICalErrorCode err = createCalendar("/home/joseph/cis2750/a01/testFiles/googleCalendarTest.ics", &googleCal);
+    char *printCal, *printErr;
+    Calendar *cal;
+    ICalErrorCode err = createCalendar("/home/joseph/cis2750/a01/testFiles/googleCalendarTest.ics", &cal);
 
     if (err != OK) {
         printErr = printError(err);
-        printf("\n\nAn error occurred: %s\n", printErr);
+        printf("\nAn error occurred: %s\n", printErr);
         free(printErr);
     } else {
-        printGoogleCal = printCalendar(googleCal);
-        printf("\n\nGoogle Calendar: \n\"%s\"\n", printGoogleCal);
-        free(printGoogleCal);
-        deleteCalendar(googleCal);
+        printCal = printCalendar(cal);
+        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
+        free(printCal);
+        deleteCalendar(cal);
     }
 
+    printf("\n\n-----NEW CALENDAR-----\n");
+    err = createCalendar("/home/joseph/cis2750/a01/testFiles/mLineProp1.ics", &cal);
+    if (err != OK) {
+        printErr = printError(err);
+        printf("\nAn error occurred: %s\n", printErr);
+        free(printErr);
+    } else {
+        printCal = printCalendar(cal);
+        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
+        free(printCal);
+        deleteCalendar(cal);
+    }
+
+
+    printf("\n\n-----NEW CALENDAR-----\n");
+    err = createCalendar("/home/joseph/cis2750/a01/testFiles/testCalEvtProp.ics", &cal);
+    if (err != OK) {
+        printErr = printError(err);
+        printf("\nAn error occurred: %s\n", printErr);
+        free(printErr);
+    } else {
+        printCal = printCalendar(cal);
+        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
+        free(printCal);
+        deleteCalendar(cal);
+    }
+
+
+    printf("\n\n-----NEW CALENDAR-----\n");
+    err = createCalendar("/home/joseph/cis2750/a01/testFiles/testCalEvtPropAlm.ics", &cal);
+    if (err != OK) {
+        printErr = printError(err);
+        printf("\nAn error occurred: %s\n", printErr);
+        free(printErr);
+    } else {
+        printCal = printCalendar(cal);
+        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
+        free(printCal);
+        deleteCalendar(cal);
+    }
+
+
+
+    printf("\n\n-----NEW CALENDAR-----\n");
+    err = createCalendar("/home/joseph/cis2750/a01/testFiles/testCalSimpleNoUTC.ics", &cal);
+    if (err != OK) {
+        printErr = printError(err);
+        printf("\nAn error occurred: %s\n", printErr);
+        free(printErr);
+    } else {
+        printCal = printCalendar(cal);
+        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
+        free(printCal);
+        deleteCalendar(cal);
+    }
+
+
+
+    printf("\n\n-----NEW CALENDAR-----\n");
+    err = createCalendar("/home/joseph/cis2750/a01/testFiles/testCalSimpleUTCComments.ics", &cal);
+    if (err != OK) {
+        printErr = printError(err);
+        printf("\nAn error occurred: %s\n", printErr);
+        free(printErr);
+    } else {
+        printCal = printCalendar(cal);
+        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
+        free(printCal);
+        deleteCalendar(cal);
+    }
 
 
 
