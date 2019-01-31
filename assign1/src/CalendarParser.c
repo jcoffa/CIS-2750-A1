@@ -70,18 +70,14 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         // Check if the END:VCALENDAR has been hit. If it has, and there is still more file to be read,
         // then something has gone wrong.
         if (endCal) {
-            deleteCalendar(*obj);
-            *obj = NULL;
-            free(parse);
+            cleanup(obj, parse, fin);
             return INV_CAL;
         }
 
         // The first non-commented line must be BEGIN:VCALENDAR
         if (!beginCal && !startsWith(parse, "BEGIN:VCALENDAR")) {
             printf("DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
-            deleteCalendar(*obj);
-            *obj = NULL;
-            free(parse);
+            cleanup(obj, parse, fin);
             return INV_CAL;
         } else if (!beginCal) {
             printf("DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
@@ -94,23 +90,34 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         // add properties, alarms, events, and other elements to the calendar
         if (startsWith(parse, "VERSION:")) {
             if (version) {
-                deleteCalendar(*obj);
-                *obj = NULL;
-                free(parse);
+                cleanup(obj, parse, fin);
                 return DUP_VER;
             }
 
             printf("DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
+            char *endptr;
             // +8 to start conversion after the 'VERSION:' part of the string
-            (*obj)->version = strtof(line + 8, NULL);
+            (*obj)->version = strtof(line + 8, &endptr);
+
+            if (strlen(line + 8) == 0 || line+8 == endptr) {
+                // VERSION property contains no data after the ':', or the data
+                // could not be converted into a number
+                cleanup(obj, parse, fin);
+                return INV_VER;
+            }
+
             printf("DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
             version = true;
         } else if (startsWith(parse, "PRODID:")) {
             if (prodID) {
-                deleteCalendar(*obj);
-                *obj = NULL;
-                free(parse);
+                cleanup(obj, parse, fin);
                 return DUP_PRODID;
+            }
+
+            // PRODID: contains no information
+            if (strlen(line + 7) == 0) {
+                cleanup(obj, parse, fin);
+                return INV_PRODID;
             }
 
             // +7 to only copy characters past 'PRODID:' part of the string
@@ -120,19 +127,21 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             prodID = true;
         } else if (startsWith(parse, "METHOD:")) {
             if (method) {
-                deleteCalendar(*obj);
-                *obj = NULL;
-                free(parse);
-                return OTHER_ERROR;
+                cleanup(obj, parse, fin);
+                return INV_CAL;
+            }
+
+            // METHOD: contains no information
+            if (strlen(line + 7) == 0) {
+                cleanup(obj, parse, fin);
+                return INV_CAL;
             }
 
             printf("DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
             Property *methodProp;
             if ((error = initializeProperty(line, &methodProp)) != OK) {
                 // something happened, and the property could not be created properly
-                deleteCalendar(*obj);
-                *obj = NULL;
-                free(parse);
+                cleanup(obj, parse, fin);
                 return INV_CAL;
             }
 
@@ -141,17 +150,13 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         } else if (startsWith(parse, "END:VCALENDAR")) {
             endCal = true;
         } else if (startsWith(parse, "BEGIN:VCALENDAR")) {
-            deleteCalendar(*obj);
-            *obj = NULL;
-            free(parse);
+            cleanup(obj, parse, fin);
             return INV_CAL;
         } else if (startsWith(parse, "BEGIN:VEVENT")) {
             Event *event;
             if ((error = getEvent(fin, &event)) != OK) {
                 // something happened, and the event could not be created properly
-                deleteCalendar(*obj);
-                *obj = NULL;
-                free(parse);
+                cleanup(obj, parse, fin);
                 return error;
             }
 
@@ -159,18 +164,14 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         } else if (startsWith(parse, "BEGIN:VALARM")) {
             // there can't be an alarm for an entire calendar
             printf("DEBUG: in createCalendar: found an alarm not in an event\n");
-            deleteCalendar(*obj);
-            *obj = NULL;
-            free(parse);
+            cleanup(obj, parse, fin);
             return INV_ALARM;
         } else {
             printf("DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
                 // something happened, and the property could not be created properly
-                deleteCalendar(*obj);
-                *obj = NULL;
-                free(parse);
+                cleanup(obj, parse, fin);
                 return INV_CAL;
             }
 
@@ -178,7 +179,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         }
 
         free(parse);
-        printf("\n");
+        printf("\n");   // DEBUG:
     }
     fclose(fin);
 
@@ -189,18 +190,15 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     // Calendars require a few mandatory elements. If one does not have
     // any of these properties/lines, it is invalid.
     if (!prodID) {
-        deleteCalendar(*obj);
-        *obj = NULL;
+        cleanup(obj, parse, NULL);
         return INV_PRODID;
     }
     if (!version) {
-        deleteCalendar(*obj);
-        *obj = NULL;
+        cleanup(obj, parse, NULL);
         return INV_VER;
     }
     if (!endCal) {
-        deleteCalendar(*obj);
-        *obj = NULL;
+        cleanup(obj, parse, NULL);
         return INV_CAL;
     }
 
@@ -243,13 +241,6 @@ char* printCalendar(const Calendar* obj) {
         return NULL;
     }
 
-    if (obj->events == NULL) {
-        printf("EVENTS LIST IS NULL\n");
-    }
-    if (obj->properties == NULL) {
-        printf("PROPERTIES LIST IS NULL\n");
-    }
-
     char *eventListStr = toString(obj->events);
     char *propertyListStr = toString(obj->properties);
 
@@ -283,47 +274,47 @@ char* printError(ICalErrorCode err) {
             break;
 
         case INV_FILE:
-            strcpy(toReturn, "INV_FILE: File not found, or could not be opened");
+            strcpy(toReturn, "Invalid files");
             break;
 
         case INV_VER:
-            strcpy(toReturn, "INV_VER: The VERSION: property of the Calendar was not found or contained data that could not be coerced into a floating point number");
+            strcpy(toReturn, "Invalid version");
             break;
 
         case DUP_VER:
-            strcpy(toReturn, "DUP_VER: The VERSION: property of the Calendar was found in more than one location");
+            strcpy(toReturn, "Duplicate version");
             break;
 
         case INV_PRODID:
-            strcpy(toReturn, "INV_PRODID: The PRODID: property of the Calendar was not found or had invalid syntax");
+            strcpy(toReturn, "Invalid product ID");
             break;
 
         case DUP_PRODID:
-            strcpy(toReturn, "DUP_PRODID: The PRODID: property of the Calendar was found in more than one location");
+            strcpy(toReturn, "Duplicate product ID");
             break;
 
         case INV_EVENT:
-            strcpy(toReturn, "INV_EVENT: An Event in the Calendar contains invalid information, has syntax errors, or does not contain all required data for an Event");
+            strcpy(toReturn, "Invalid event");
             break;
 
         case INV_DT:
-            strcpy(toReturn, "INV_DT: Any of the possible Date-Time (DT__) properties of an element in the Calendar contains invalid information, has syntax errors, or does not contain all required data");
+            strcpy(toReturn, "Invalid date-time");
             break;
 
         case INV_ALARM:
-            strcpy(toReturn, "INV_ALARM: An Alarm in the Calendar contains invalid information, has syntax errors, or does not contain all required data for an Alarm");
+            strcpy(toReturn, "Invalid alarm");
             break;
 
         case WRITE_ERROR:
-            strcpy(toReturn, "WRITE_ERROR: Some data in a Calendar object could not be written to a file properyl or at all");
+            strcpy(toReturn, "Write error");
             break;
 
         case OTHER_ERROR:
-            strcpy(toReturn, "OTHER_ERROR: No details available");
+            strcpy(toReturn, "Other error");
             break;
 
         default:
-            sprintf(toReturn, "UNKNOWN ERROR: Found error with value %d", err);
+            sprintf(toReturn, "Unknown error: Found error with value %d", err);
             break;
     }
 
