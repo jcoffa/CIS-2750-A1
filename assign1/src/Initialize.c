@@ -13,6 +13,8 @@
 /*
  * Populates the DateTime structure 'dt' with data retrieved from the string 'line',
  * which should come from an iCalendar file.
+ * Returns OK if no errors occurred, INV_DT if the line contains malformed DateTime data,
+ * and OTHER_ERROR if the line is NULL.
  */
 ICalErrorCode initializeDateTime(const char *line, DateTime *dt) {
     char data[300];
@@ -25,18 +27,23 @@ ICalErrorCode initializeDateTime(const char *line, DateTime *dt) {
     }
 
     int len = strlen(line);
+    int colonIndex = strcspn(line, delimData);
+    int tIndex = strcspn(line, delimTime);
 
     printf("\tDEBUG: in initializeDateTime: line (length of %d) = \"%s\"\n", len, line);
 
     // the line contains no characters in 'delim', or the letter 't'
     // which is necessary to differentiate the date and time parts of a DateTime
-    if ((strcspn(line, delimData) == len) || (strcspn(line, delimTime) == len)) {
+    // or it follows FORM #3 of the DateTime forms (as stated in section 3.3.5
+    // of the RFC 5545 iCal specification)
+    printf("Character at line[%d] = %c\n", colonIndex+1, line[colonIndex+1]);
+    if (colonIndex == len || tIndex == len || !isdigit(line[colonIndex+1])) {
         dt = NULL;
         return INV_DT;
     }
 
     // ignore everything before (and including) the property name and ':' or ';'
-    strcpy(data, line + strcspn(line, delimData) + 1);
+    strcpy(data, line + colonIndex + 1);
 
     // the first 8 characters is the date
     strncpy(dt->date, data, 8);
@@ -57,8 +64,8 @@ ICalErrorCode initializeDateTime(const char *line, DateTime *dt) {
  * string 'line', which should come from an iCalendar file.
  * Everything leading up to the first ':' or ';' becomes the propName, and everything after
  * becomes the propDescr.
- * Returns NULL if the line contains no ':' or ';' characters.
- * Returns a pointer to the newly allocated Property otherwise.
+ * Returns OK if no errors occurred, OTHER_ERROR if malloc fails or 'line' is NULL,
+ * and INV_CAL if either the name or description is blank.
  */
 ICalErrorCode initializeProperty(const char *line, Property **prop) {
     char name[200], descr[2000];
@@ -116,7 +123,7 @@ ICalErrorCode initializeProperty(const char *line, Property **prop) {
  * must be entered manually.
  * Memory is not allocated for its 'trigger', as it is dynamically allocated
  * to perfectly fit the length of its string.
- * Returns a pointer to the newly allocated Alarm structure.
+ * Returns OK if no errors occurred, and OTHER_ERROR if any malloc calls fail.
  */
 ICalErrorCode initializeAlarm(Alarm **alm) {
     *alm = malloc(sizeof(Alarm));
@@ -141,7 +148,7 @@ ICalErrorCode initializeAlarm(Alarm **alm) {
  * Allocates memory for an Event structure, and initializes its Property List.
  * Events have mutliple properties across multiple lines, so their data
  * must be entered manually.
- * Returns a pointer to the newly allocated Event structure.
+ * Returns OK if no errors occurred, and OTHER_ERROR if any malloc calls fail.
  */
 ICalErrorCode initializeEvent(Event **evt) {
     *evt = malloc(sizeof(Event));
@@ -165,7 +172,7 @@ ICalErrorCode initializeEvent(Event **evt) {
  * Allocates memory for a Calendar structure, and initializes all of its Lists.
  * Calendar's have multiple properties across multiple lines, so their data
  * must be entered manually.
- * Returns a pointer to the newly allocated Calendar structure.
+ * Returns OK if no errors occurred, and OTHER_ERROR if any malloc calls fail.
  */
 ICalErrorCode initializeCalendar(Calendar **cal) {
     *cal = malloc(sizeof(Calendar));
