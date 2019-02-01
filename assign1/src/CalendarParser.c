@@ -52,12 +52,12 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
     char line[10000];
     while (!feof(fin)) {
-        fprintf(stdin, "DEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
+        fprintf(stdout, "DEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
                 version, prodID, method, beginCal, endCal);
         readFold(line, 10000, fin);
         parse = strUpperCopy(line);
 
-        fprintf(stdin, "DEBUG: in createCalendar: unfolded, capitalized line: \"%s\"\n", parse);
+        fprintf(stdout, "DEBUG: in createCalendar: unfolded, capitalized line: \"%s\"\n", parse);
         
         if (startsWith(parse, ";")) {
             // lines starting with a semicolon (;) are comments, and
@@ -76,11 +76,11 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
         // The first non-commented line must be BEGIN:VCALENDAR
         if (!beginCal && !startsWith(parse, "BEGIN:VCALENDAR")) {
-            fprintf(stdin, "DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
+            fprintf(stdout, "DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
             cleanup(obj, parse, fin);
             return INV_CAL;
         } else if (!beginCal) {
-            fprintf(stdin, "DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
+            fprintf(stdout, "DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
             beginCal = true;
             free(parse);
             continue;
@@ -94,7 +94,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 return DUP_VER;
             }
 
-            fprintf(stdin, "DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
+            fprintf(stdout, "DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
             char *endptr;
             // +8 to start conversion after the 'VERSION:' part of the string
             (*obj)->version = strtof(line + 8, &endptr);
@@ -106,7 +106,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 return INV_VER;
             }
 
-            fprintf(stdin, "DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
+            fprintf(stdout, "DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
             version = true;
         } else if (startsWith(parse, "PRODID:")) {
             if (prodID) {
@@ -121,9 +121,9 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             }
 
             // +7 to only copy characters past 'PRODID:' part of the string
-            fprintf(stdin, "DEBUG: in createCalendar: found PRODID line: \"%s\"\n", line);
+            fprintf(stdout, "DEBUG: in createCalendar: found PRODID line: \"%s\"\n", line);
             strcpy((*obj)->prodID, line + 7);
-            fprintf(stdin, "DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
+            fprintf(stdout, "DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
             prodID = true;
         } else if (startsWith(parse, "METHOD:")) {
             if (method) {
@@ -137,7 +137,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 return INV_CAL;
             }
 
-            fprintf(stdin, "DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
+            fprintf(stdout, "DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
             Property *methodProp;
             if ((error = initializeProperty(line, &methodProp)) != OK) {
                 // something happened, and the property could not be created properly
@@ -163,11 +163,11 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             insertFront((*obj)->events, (void *)event);
         } else if (startsWith(parse, "BEGIN:VALARM")) {
             // there can't be an alarm for an entire calendar
-            fprintf(stdin, "DEBUG: in createCalendar: found an alarm not in an event\n");
+            fprintf(stdout, "DEBUG: in createCalendar: found an alarm not in an event\n");
             cleanup(obj, parse, fin);
             return INV_ALARM;
         } else {
-            fprintf(stdin, "DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
+            fprintf(stdout, "DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
                 // something happened, and the property could not be created properly
@@ -232,7 +232,7 @@ char* printCalendar(const Calendar* obj) {
 
     // check for malloc failing
     if (toReturn == NULL) {
-        fprintf(stdin, "CALL TO MALLOC FAILED IN printCalendar()\n");
+        fprintf(stdout, "CALL TO MALLOC FAILED IN printCalendar()\n");
         return NULL;
     }
 
@@ -384,7 +384,7 @@ char* printEvent(void* toBePrinted) {
     char *propsStr = toString(ev->properties);
     char *alarmsStr = toString(ev->alarms);
 
-    int length = strlen(createStr) + strlen(startStr) + strlen(propsStr) + strlen(alarmsStr) + 130;
+    int length = strlen(createStr) + strlen(startStr) + strlen(propsStr) + strlen(alarmsStr) + 150;
     char *toReturn = malloc(length);
 
     snprintf(toReturn, length, "EventUID: \"%s\", EventCreate: \"%s\", EventStart: \"%s\", EVENT_PROPERTIES: {%s\n} End EVENT_PROPERTIES, Start EVENT_ALARMS: {%s\n} End EVENT_ALARMS", \
@@ -437,7 +437,7 @@ char* printAlarm(void* toBePrinted) {
     // Lists have their own print function
     char *props = toString(al->properties);
 
-    int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 100;
+    int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 150;
     char *toReturn = malloc(length);
 
     snprintf(toReturn, length, "AlarmAction: \"%s\", AlarmTrigger: \"%s\", Start ALARM_PROPERTIES: {%s\n} End ALARM_PROPERTIES", \

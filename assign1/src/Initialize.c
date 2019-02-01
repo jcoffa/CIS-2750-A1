@@ -30,7 +30,7 @@ ICalErrorCode initializeDateTime(const char *line, DateTime *dt) {
     int colonIndex = strcspn(line, delimData);
     int tIndex = strcspn(line, delimTime);
 
-    fprintf(stdin, "\tDEBUG: in initializeDateTime: line (length of %d) = \"%s\"\n", len, line);
+    fprintf(stdout, "\tDEBUG: in initializeDateTime: line (length of %d) = \"%s\"\n", len, line);
 
     // the line contains no characters in 'delim', or the letter 't'
     // which is necessary to differentiate the date and time parts of a DateTime
@@ -50,7 +50,7 @@ ICalErrorCode initializeDateTime(const char *line, DateTime *dt) {
     (dt->date)[8] = '\0';   // strncpy does not automatically null-terminate
 
     // the next 6 characters after the "T" character is the time
-    fprintf(stdin, "\tDEBUG: in initializeDateTime, data + strcspn(data, \"%s\") = \"%s\"\n", delimTime, data + strcspn(data, delimTime)+1);
+    fprintf(stdout, "\tDEBUG: in initializeDateTime, data + strcspn(data, \"%s\") = \"%s\"\n", delimTime, data + strcspn(data, delimTime)+1);
     strncpy(dt->time, data + strcspn(data, delimTime)+1, 6);
     (dt->time)[6] = '\0';   // strncpy does not automatically null-terminate
 
@@ -80,14 +80,14 @@ ICalErrorCode initializeProperty(const char *line, Property **prop) {
         return OTHER_ERROR;
     }
 
-    fprintf(stdin, "\tDEBUG: in initializeProperty: line = \"%s\"\n", line);
+    fprintf(stdout, "\tDEBUG: in initializeProperty: line = \"%s\"\n", line);
 
     firstDelim = strcspn(line, delim);
 
     // if these values are the same, then 'line' does not contain
     // any of the delimiting characters that are indicative of a property
     if (firstDelim == length) {
-        fprintf(stdin, "\tDEBUG: in initializeProperty: delim characters \"%s\" were not present in the line: \"%s\"\n", \
+        fprintf(stdout, "\tDEBUG: in initializeProperty: delim characters \"%s\" were not present in the line: \"%s\"\n", \
                delim, line);
         // DateTime is malformed
         return INV_DT;
@@ -103,7 +103,7 @@ ICalErrorCode initializeProperty(const char *line, Property **prop) {
         return INV_CAL;
     }
 
-    fprintf(stdin, "DEBUG: in initializeProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
+    fprintf(stdout, "DEBUG: in initializeProperty: name=\"%s\", descr=\"%s\"\n", name, descr);
 
     *prop = malloc(sizeof(Property) + strlen(descr) + 1);
     if (*prop == NULL) {
