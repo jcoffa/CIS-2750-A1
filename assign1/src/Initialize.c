@@ -36,7 +36,6 @@ ICalErrorCode initializeDateTime(const char *line, DateTime *dt) {
     // which is necessary to differentiate the date and time parts of a DateTime
     // or it follows FORM #3 of the DateTime forms (as stated in section 3.3.5
     // of the RFC 5545 iCal specification)
-    printf("Character at line[%d] = %c\n", colonIndex+1, line[colonIndex+1]);
     if (colonIndex == len || tIndex == len || !isdigit(line[colonIndex+1])) {
         dt = NULL;
         return INV_DT;
