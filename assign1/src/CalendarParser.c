@@ -384,10 +384,10 @@ char* printEvent(void* toBePrinted) {
     char *propsStr = toString(ev->properties);
     char *alarmsStr = toString(ev->alarms);
 
-    int length = strlen(createStr) + strlen(startStr) + strlen(propsStr) + strlen(alarmsStr) + 150;
+    int length = strlen(createStr) + strlen(startStr) + strlen(propsStr) + strlen(alarmsStr) + 200;
     char *toReturn = malloc(length);
 
-    snprintf(toReturn, length, "EventUID: \"%s\", EventCreate: \"%s\", EventStart: \"%s\", EVENT_PROPERTIES: {%s\n} End EVENT_PROPERTIES, Start EVENT_ALARMS: {%s\n} End EVENT_ALARMS", \
+    snprintf(toReturn, length, "Start EVENT {EventUID: \"%s\", EventCreate: \"%s\", EventStart: \"%s\", EVENT_PROPERTIES: {%s\n} End EVENT_PROPERTIES, Start EVENT_ALARMS: {%s\n} End EVENT_ALARMS} End EVENT", \
              ev->UID, createStr, startStr, propsStr, alarmsStr);
 
     // Free dynamically allocated print strings
@@ -437,10 +437,10 @@ char* printAlarm(void* toBePrinted) {
     // Lists have their own print function
     char *props = toString(al->properties);
 
-    int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 150;
+    int length = strlen(al->action) + strlen(al->trigger) + strlen(props) + 200;
     char *toReturn = malloc(length);
 
-    snprintf(toReturn, length, "AlarmAction: \"%s\", AlarmTrigger: \"%s\", Start ALARM_PROPERTIES: {%s\n} End ALARM_PROPERTIES", \
+    snprintf(toReturn, length, "Start ALARM {AlarmAction: \"%s\", AlarmTrigger: \"%s\", Start ALARM_PROPERTIES: {%s\n} End ALARM_PROPERTIES} End ALARM", \
              al->action, al->trigger, props);
 
     // Free dynamically allocated print string
@@ -480,10 +480,10 @@ char* printProperty(void* toBePrinted) {
 
     Property *prop = (Property *)toBePrinted;
 
-    int length = strlen(prop->propDescr) + 100;
+    int length = strlen(prop->propDescr) + 150;
     char *toReturn = malloc(length);
 
-    snprintf(toReturn, length, "PropName: \"%s\", PropDescr: \"%s\"", prop->propName, prop->propDescr);
+    snprintf(toReturn, length, "Start PROPERTY {PropName: \"%s\", PropDescr: \"%s\"} End PROPERTY", prop->propName, prop->propDescr);
 
     return realloc(toReturn, strlen(toReturn) + 1);
 }
@@ -514,10 +514,8 @@ int compareDates(const void* first, const void* second) {
         // if times are also the same, then compare UTC instead
         if ((cmp = strcmp(dt1->time, dt2->time)) == 0) {
             return dt1->UTC - dt2->UTC;
-        }
-        // if they are not, then return the time comparison below
-    }
-    // if they are not, then return the date comparison below
+        } // if they are not, then return the time comparison below
+    } // if they are not, then return the date comparison below
 
     return cmp;
 }
@@ -531,11 +529,10 @@ char* printDate(void* toBePrinted) {
 
     DateTime *dt = (DateTime *)toBePrinted;
 
-    // 9 chars for date, + 7 for time, + 70 for rest of string = 86 bytes, round to 100 to be safe
-    int length = 100;
+    int length = 150;
     char *toReturn = malloc(length);
 
-    snprintf(toReturn, length, "Date (YYYYMMDD): \"%s\", Time (HHMMSS): \"%s\", UTC?: %s", \
+    snprintf(toReturn, length, "Start DATE_TIME {Date (YYYYMMDD): \"%s\", Time (HHMMSS): \"%s\", UTC?: %s} End DATE_TIME", \
              dt->date, dt->time, (dt->UTC) ? "Yes" : "No");
 
     return realloc(toReturn, strlen(toReturn) + 1);
