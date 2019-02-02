@@ -399,90 +399,75 @@ int main() {
 
     printf("\n\n\n----------CALENDAR CREATION----------\n");
     char *printCal, *printErr;
+    char *files[43] = {"/home/joseph/cis2750/a01/testFiles/googleCalendarTest.ics", \
+                      "/home/joseph/cis2750/a01/testFiles/mLineProp1.ics", \
+                      "/home/joseph/cis2750/a01/testFiles/testCalEvtProp.ics", \
+                      "/home/joseph/cis2750/a01/testFiles/testCalEvtPropAlm.ics", \
+                      "/home/joseph/cis2750/a01/testFiles/testCalSimpleNoUTC.ics", \
+                      "/home/joseph/cis2750/a01/testFiles/testCalSimpleUTCComments.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID1.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID2.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID3.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_VER/DupVersion1.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_VER/DupVersion2.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_VER/DupVersion3.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_ALARM/MissingAction.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_ALARM/MissingClosingTag.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_ALARM/MissingClosingTag2.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_VER/MissingTrigger.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/BadLine.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingEndCalendar.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingEvent.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingEvent2.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingOpeningTag.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingPRODID.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingVER.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_DT/MalformedCreationDate.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_DT/MalformedStartDate.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MalformedUID.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingClosingTag.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingCreationDate.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingStartDate.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingUID.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_FILE/BadFileName.txt", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_FILE/BadFileName2.ical", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_FILE/BadFileName3.icss", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_FILE/InvalidLineEndings.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_PRODID/MissingPRODID1.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_PRODID/MissingPRODID2.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_VER/MalformedVersion1.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_VER/MalformedVersion2.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_VER/MissingVersion1.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/OK/fuck_you.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/OK/ValidFileFolding.ics", \
+                      "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/OK/ValidFileSimple.ics", \
+                      NULL};
     Calendar *cal;
-    ICalErrorCode err = createCalendar("/home/joseph/cis2750/a01/testFiles/googleCalendarTest.ics", &cal);
+    int i = 0;
+    ICalErrorCode err;
 
-    if (err != OK) {
-        printErr = printError(err);
-        printf("\nAn error occurred: %s\n", printErr);
-        free(printErr);
-    } else {
-        printCal = printCalendar(cal);
-        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
-        free(printCal);
-        deleteCalendar(cal);
+    while (files[i] != NULL) {
+        printf("\n\n\n==========================================================================================\n");
+        printf("%s\n", files[i]);
+        printf("==========================================================================================\n");
+        err = createCalendar(files[i], &cal);
+
+        if (err != OK) {
+            printErr = printError(err);
+            printf("\nAn error occurred: %s\n", printErr);
+            free(printErr);
+        } else {
+            printCal = printCalendar(cal);
+            printf("\nPrinting Calendar from %s:\n\"%s\"\n", files[i], printCal);
+            free(printCal);
+            deleteCalendar(cal);
+        }
+
+        i++;
     }
 
-    printf("\n\n-----NEW CALENDAR-----\n");
-    err = createCalendar("/home/joseph/cis2750/a01/testFiles/mLineProp1.ics", &cal);
-    if (err != OK) {
-        printErr = printError(err);
-        printf("\nAn error occurred: %s\n", printErr);
-        free(printErr);
-    } else {
-        printCal = printCalendar(cal);
-        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
-        free(printCal);
-        deleteCalendar(cal);
-    }
+    printf("\n\nRan through %d calendars.\n", i);
 
-
-    printf("\n\n-----NEW CALENDAR-----\n");
-    err = createCalendar("/home/joseph/cis2750/a01/testFiles/testCalEvtProp.ics", &cal);
-    if (err != OK) {
-        printErr = printError(err);
-        printf("\nAn error occurred: %s\n", printErr);
-        free(printErr);
-    } else {
-        printCal = printCalendar(cal);
-        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
-        free(printCal);
-        deleteCalendar(cal);
-    }
-
-
-    printf("\n\n-----NEW CALENDAR-----\n");
-    err = createCalendar("/home/joseph/cis2750/a01/testFiles/testCalEvtPropAlm.ics", &cal);
-    if (err != OK) {
-        printErr = printError(err);
-        printf("\nAn error occurred: %s\n", printErr);
-        free(printErr);
-    } else {
-        printCal = printCalendar(cal);
-        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
-        free(printCal);
-        deleteCalendar(cal);
-    }
-
-
-
-    printf("\n\n-----NEW CALENDAR-----\n");
-    err = createCalendar("/home/joseph/cis2750/a01/testFiles/testCalSimpleNoUTC.ics", &cal);
-    if (err != OK) {
-        printErr = printError(err);
-        printf("\nAn error occurred: %s\n", printErr);
-        free(printErr);
-    } else {
-        printCal = printCalendar(cal);
-        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
-        free(printCal);
-        deleteCalendar(cal);
-    }
-
-
-
-    printf("\n\n-----NEW CALENDAR-----\n");
-    err = createCalendar("/home/joseph/cis2750/a01/testFiles/testCalSimpleUTCComments.ics", &cal);
-    if (err != OK) {
-        printErr = printError(err);
-        printf("\nAn error occurred: %s\n", printErr);
-        free(printErr);
-    } else {
-        printCal = printCalendar(cal);
-        printf("\nGoogle Calendar: \n\"%s\"\n", printCal);
-        free(printCal);
-        deleteCalendar(cal);
-    }
 
 
 
