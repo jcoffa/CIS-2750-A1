@@ -178,6 +178,11 @@ char *readFold(char *unfolded, int size, FILE *fp) {
     strcpy(unfolded, "");
 
     while (fgets(buf, sizeLeft, fp)) {
+        if (buf[0] == ';') {
+            // lines that begin with a semicolon are comments and should be ignored
+            continue;
+        }
+
         bufLength = strlen(buf);
         sizeLeft -= bufLength;
 
