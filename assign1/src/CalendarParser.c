@@ -63,6 +63,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             // lines starting with a semicolon (;) are comments, and
             // should be ignored
             free(parse);
+            parse = NULL;
             printf("\n");
             continue;
         }
@@ -150,6 +151,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         } else if (startsWith(parse, "END:VCALENDAR")) {
             endCal = true;
         } else if (startsWith(parse, "BEGIN:VCALENDAR")) {
+            // only 1 calendar allowed per file
             cleanup(obj, parse, fin);
             return INV_CAL;
         } else if (startsWith(parse, "BEGIN:VEVENT")) {
@@ -179,6 +181,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         }
 
         free(parse);
+        parse = NULL;
         printf("\n");   // DEBUG:
     }
     fclose(fin);
@@ -203,7 +206,8 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     }
 
     // the file has been parsed, mandatory properties have been found,
-    // and the calendar is valid
+    // and the calendar is valid (or at least valid with respect to
+    // the syntax of an iCalendar file)
     return OK;
 }
 
