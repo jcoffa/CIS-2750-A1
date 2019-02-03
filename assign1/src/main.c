@@ -12,6 +12,8 @@
 #include "Parsing.h"
 #include "Initialize.h"
 
+#define NUM_FILES 43
+
 int main() {
 
     /*
@@ -399,12 +401,18 @@ int main() {
 
     printf("\n\n\n----------CALENDAR CREATION----------\n");
     char *printCal, *printErr;
-    char *files[43] = {"/home/joseph/cis2750/a01/testFiles/googleCalendarTest.ics", \
+
+    // FIXME This is a list of files that give memory errors FIXME
+    // #13 - INV_CAL/MissingClosingTag.ics
+    // #17 - INV_CAL/MissingEndCalendar.ics
+    // #26 - INV_EVENT/MissingClosingTag.ics
+    char *files[NUM_FILES+1] = {"/home/joseph/cis2750/a01/testFiles/googleCalendarTest.ics", \
                       "/home/joseph/cis2750/a01/testFiles/mLineProp1.ics", \
                       "/home/joseph/cis2750/a01/testFiles/testCalEvtProp.ics", \
                       "/home/joseph/cis2750/a01/testFiles/testCalEvtPropAlm.ics", \
                       "/home/joseph/cis2750/a01/testFiles/testCalSimpleNoUTC.ics", \
                       "/home/joseph/cis2750/a01/testFiles/testCalSimpleUTCComments.ics", \
+                      "/home/joseph/cis2750/a01/testFiles/aids.ics", \
                       "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID1.ics", \
                       "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID2.ics", \
                       "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID3.ics", \
@@ -445,12 +453,16 @@ int main() {
     Calendar *cal;
     int i = 0;
     ICalErrorCode err;
+    int choice;
 
-    while (files[i] != NULL) {
+    printf("Which calendar would you like to test? [0-41, anything else for all]: ");
+    scanf("%d", &choice);
+
+    if (choice >= 0 && choice < NUM_FILES) {
         printf("\n\n\n==========================================================================================\n");
-        printf("%s\n", files[i]);
+        printf("%s\n", files[choice]);
         printf("==========================================================================================\n");
-        err = createCalendar(files[i], &cal);
+        err = createCalendar(files[choice], &cal);
 
         if (err != OK) {
             printErr = printError(err);
@@ -458,15 +470,34 @@ int main() {
             free(printErr);
         } else {
             printCal = printCalendar(cal);
-            printf("\nPrinting Calendar from %s:\n\"%s\"\n", files[i], printCal);
+            printf("\nPrinting Calendar from %s:\n", files[choice]);
+            printf("------------------------------------------------------------------------------------------\n");
+            printf("\"%s\"\n", printCal);
             free(printCal);
             deleteCalendar(cal);
         }
+    } else {
+        while (files[i] != NULL) {
+            printf("\n\n\n==========================================================================================\n");
+            printf("%s\n", files[i]);
+            printf("==========================================================================================\n");
+            err = createCalendar(files[i], &cal);
 
-        i++;
+            if (err != OK) {
+                printErr = printError(err);
+                printf("\nAn error occurred: %s\n", printErr);
+                free(printErr);
+            } else {
+                printCal = printCalendar(cal);
+                printf("\nPrinting Calendar from %s:\n\"%s\"\n", files[i], printCal);
+                free(printCal);
+                deleteCalendar(cal);
+            }
+
+            i++;
+        }
+        printf("\n\nRan through %d calendars.\n", i);
     }
-
-    printf("\n\nRan through %d calendars.\n", i);
 
 
 
