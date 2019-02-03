@@ -46,6 +46,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         return INV_FILE;
     }
 
+    // allocate memory for the Calendar and all its components
     if ((error = initializeCalendar(obj)) != OK) {
         return error;
     }
@@ -268,7 +269,7 @@ char* printCalendar(const Calendar* obj) {
 **/
 char* printError(ICalErrorCode err) {
     // FIXME this doesn't do what the description specificly says;
-    // no array named 'desc' is found anywhere in the assignment outline,
+    // no array named 'descr' is found anywhere in the assignment outline,
     // so I can't exactly index it.
     char *toReturn = malloc(200);
     
@@ -278,7 +279,11 @@ char* printError(ICalErrorCode err) {
             break;
 
         case INV_FILE:
-            strcpy(toReturn, "Invalid files");
+            strcpy(toReturn, "Invalid file");
+            break;
+
+        case INV_CAL:
+            strcpy(toReturn, "Invalid calendar");
             break;
 
         case INV_VER:
@@ -333,7 +338,9 @@ char* printError(ICalErrorCode err) {
  *@return the error code indicating success or the error encountered when parsing the calendar
  *@param obj - a pointer to a Calendar struct
  **/
-ICalErrorCode writeCalendar(char* fileName, const Calendar* obj);
+ICalErrorCode writeCalendar(char* fileName, const Calendar* obj) {
+    return OK;
+}
 
 
 /** Function to validating an existing a Calendar object
@@ -342,7 +349,9 @@ ICalErrorCode writeCalendar(char* fileName, const Calendar* obj);
  *@return the error code indicating success or the error encountered when validating the calendar
  *@param obj - a pointer to a Calendar struct
  **/
-ICalErrorCode validateCalendar(const Calendar* obj);
+ICalErrorCode validateCalendar(const Calendar* obj) {
+    return OK;
+}
 
 
 // ************* List helper functions - MUST be implemented ***************
@@ -496,12 +505,9 @@ char* printProperty(void* toBePrinted) {
 /*
  */
 void deleteDate(void* toBeDeleted) {
-    // DateTimes are alloc'd in one block and none of their
-    // members needs to be freed in any special way, so no
-    // type casting or calling other functions is necessary
-    if (toBeDeleted) {
-        free(toBeDeleted);
-    }
+    // DateTimes do not have to be dynamically allocated (no structures use DT pointers,
+    // and DT's are always a set size), so I'm honestly not entirely sure why this function is even here.
+    return;
 }
 
 /*
@@ -509,6 +515,7 @@ void deleteDate(void* toBeDeleted) {
  * if the times are the same as well.
  */
 int compareDates(const void* first, const void* second) {
+    /*
     DateTime *dt1 = (DateTime *)first;
     DateTime *dt2 = (DateTime *)second;
     int cmp;
@@ -518,10 +525,14 @@ int compareDates(const void* first, const void* second) {
         // if times are also the same, then compare UTC instead
         if ((cmp = strcmp(dt1->time, dt2->time)) == 0) {
             return dt1->UTC - dt2->UTC;
-        } // if they are not, then return the time comparison below
-    } // if they are not, then return the date comparison below
+        } // if times are not the same, then return the time comparison below
+    } // if dates are not the same, then return the date comparison below
 
     return cmp;
+    */
+
+    // This function is a stub for A1, so it returns 0
+    return 0;
 }
 
 /*
