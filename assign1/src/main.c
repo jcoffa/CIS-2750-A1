@@ -12,7 +12,7 @@
 #include "Parsing.h"
 #include "Initialize.h"
 
-#define NUM_FILES 43
+#define NUM_FILES 44
 
 int main() {
 
@@ -413,6 +413,7 @@ int main() {
                       "/home/joseph/cis2750/a01/testFiles/testCalSimpleNoUTC.ics", \
                       "/home/joseph/cis2750/a01/testFiles/testCalSimpleUTCComments.ics", \
                       "/home/joseph/cis2750/a01/testFiles/aids.ics", \
+                      "/home/joseph/cis2750/a01/testFiles/lastlaugh.ics", \
                       "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID1.ics", \
                       "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID2.ics", \
                       "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_PRODID/DupPRODID3.ics", \
