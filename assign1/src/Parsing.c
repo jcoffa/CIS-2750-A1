@@ -211,7 +211,7 @@ char *readFold(char *unfolded, int size, FILE *fp) {
 ICalErrorCode getEvent(FILE *fp, Event **event) {
     char line[10000], *parse;
     ICalErrorCode error;
-    bool dtStamp, dtStart, UID;
+    bool dtStamp, dtStart, UID, endEvent;
     parse = NULL;
     dtStamp = dtStart = UID = false;
 
@@ -235,6 +235,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         // made uniform before checking.
         if (startsWith(parse, "END:VEVENT")) {
             fprintf(stdout, "\tDEBUG: in getEvent: line containd END:VEVENT\n");
+            endEvent = true;
             break;
         }
 
@@ -340,7 +341,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     free(parse);
 
     // the file can't end without hitting END:VEVENT (and also END:VCALENDAR)
-    if (feof(fp)) {
+    if (!endEvent) {
         fprintf(stdout, "DEBUG: in getEvent: hit end of file before reaching an END:VEVENT\n");
         deleteAlarm(*event);
         *event = NULL;
