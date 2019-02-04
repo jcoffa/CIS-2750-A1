@@ -342,7 +342,9 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     // the file can't end without hitting END:VEVENT (and also END:VCALENDAR)
     if (feof(fp)) {
         fprintf(stdout, "DEBUG: in getEvent: hit end of file before reaching an END:VEVENT\n");
-        return INV_CAL;
+        deleteAlarm(*event);
+        *event = NULL;
+        return INV_EVENT;
     }
 
     fprintf(stdout, "DEBUG: finished getEvent() successfully\n");
@@ -429,7 +431,9 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     // the file can't end without hitting END:VALARM (and also END:VCALENDAR)
     if (feof(fp)) {
         fprintf(stdout, "DEBUG: in getAlarm: hit end of file before reaching an END:VALARM\n");
-        return INV_CAL;
+        deleteAlarm(*alarm);
+        *alarm = NULL;
+        return INV_ALARM;
     }
 
     fprintf(stdout, "DEBUG: finished getAlarm() successfully\n");

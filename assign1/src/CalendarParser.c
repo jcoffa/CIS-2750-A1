@@ -78,7 +78,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
         // The first non-commented line must be BEGIN:VCALENDAR
         if (!beginCal && !startsWith(parse, "BEGIN:VCALENDAR")) {
-            fprintf(stdout, "DEBUG: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
+            fprintf(stdout, "ERROR: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
             cleanup(obj, parse, fin);
             return INV_CAL;
         } else if (!beginCal) {
@@ -166,10 +166,18 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             insertFront((*obj)->events, (void *)event);
         } else if (startsWith(parse, "BEGIN:VALARM")) {
             // there can't be an alarm for an entire calendar
-            fprintf(stdout, "DEBUG: in createCalendar: found an alarm not in an event\n");
+            fprintf(stdout, "ERROR: in createCalendar: found an alarm not in an event\n");
             cleanup(obj, parse, fin);
             return INV_ALARM;
         } else {
+            // All other BEGIN: clauses have been handled in their own 'else if' case.
+            // If another one is hit, then it is an error.
+            if (startsWith(parse, "BEGIN:")) {
+                fprintf(stdout, "ERROR: in createCalendar: Found an illegal BEGIN: \"%s\"\n", line);
+                cleanup(obj, parse, fin);
+                return INV_CAL;
+            }
+
             fprintf(stdout, "DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
