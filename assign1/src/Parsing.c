@@ -437,7 +437,7 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
         } else if (startsWith(parse, "BEGIN:VALARM") || startsWith(parse, "BEGIN:VEVENT")) {
             fprintf(stdout, "\tDEBUG: in getAlarm: found a start of another alarm or event: \"%s\"\n", line);
             error = INV_ALARM;
-            goto CLEANAL
+            goto CLEANAL;
         } else {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
