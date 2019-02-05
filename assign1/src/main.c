@@ -403,8 +403,7 @@ int main() {
     char *printCal, *printErr;
 
     // FIXME This is a list of files that give memory errors FIXME
-    // INV_CAL/MissingEndCalendar.ics
-    // INV_EVENT/MissingClosingTag.ics
+    // None!
     char *files[NUM_FILES+1] = {"/home/joseph/cis2750/a01/testFiles/googleCalendarTest.ics",
                                 "/home/joseph/cis2750/a01/testFiles/mLineProp1.ics",
                                 "/home/joseph/cis2750/a01/testFiles/testCalEvtProp.ics",
@@ -424,7 +423,7 @@ int main() {
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_ALARM/MissingClosingTag2.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/DUP_VER/MissingTrigger.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/BadLine.ics",
-                                "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingEndCalendar.ics",     // FIXME
+                                "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingEndCalendar.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingEvent.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingEvent2.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_CAL/MissingOpeningTag.ics",
@@ -433,7 +432,7 @@ int main() {
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_DT/MalformedCreationDate.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_DT/MalformedStartDate.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MalformedUID.ics",
-                                "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingClosingTag.ics",    // FIXME
+                                "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingClosingTag.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingCreationDate.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingStartDate.ics",
                                 "/home/joseph/cis2750/a01/Ben1_Test_iCal_Files/INV_EVENT/MissingUID.ics",

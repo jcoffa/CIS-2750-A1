@@ -199,7 +199,7 @@ char *readFold(char *unfolded, int size, FILE *fp) {
         foundFold = true;
     }
 
-    if (sizeLeft <= 0) {
+    if (sizeLeft < 0) {
         printf("\t--- ERROR --- readFold exceeded read size of %d characters\n", size);
     }
 
@@ -208,6 +208,17 @@ char *readFold(char *unfolded, int size, FILE *fp) {
 }
 
 
+/* XXX XXX XXX
+ * Ok listen. I'm warning you right now, this function uses goto statements. But hear me out for a second.
+ * There are LOTS of fail cases for this function. iCal files can go horribly wrong in tons of ways.
+ * On a failure, memory needs to be freed, errors need to be returned, EVERY TIME an error with the
+ * file is found. So those 3-4 cleanup statements are repeated several times in the entire function.
+ * I personally am against making lots of similar-looking cleanup functions, since it clutters up
+ * the function-space of the whole project.
+ * And so, the goto statement reigns supreme (also, Nikitenko brought up how he thinks goto statements
+ * aren't the complete devil 100% of the time, just 99% of the time, and can be useful for scenarios
+ * precisely like this one.)
+ * XXX XXX XXX */
 ICalErrorCode getEvent(FILE *fp, Event **event) {
     char line[10000], *parse;
     ICalErrorCode error;
@@ -232,11 +243,17 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
         // This check can't be in the condition for the while loop, since
         // iCal files are case insensitive, and therefore the case must be
-        // made uniform before checking.
+        // made uniform (i.e. put through strUpper) before checking.
         if (startsWith(parse, "END:VEVENT")) {
             fprintf(stdout, "\tDEBUG: in getEvent: line containd END:VEVENT\n");
             endEvent = true;
             break;
+        }
+
+        if (startsWith(parse, "END:VCALENDAR")) {
+            fprintf(stdout, "\tDEBUG: in getEvent: hit the end of the calendar before the end of the event");
+            error = INV_EVENT;
+            goto CLEANEV;
         }
 
         if (startsWith(parse, ";")) {
@@ -248,20 +265,15 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             // creation date of event
             if (dtStamp) {
                 fprintf(stdout, "\tDEBUG: in getEvent: found a second instance of a DTSTAMP property\n");
-                deleteEvent(*event);
-                *event = NULL;
-                free(parse);
-                return INV_EVENT;
+                error = INV_EVENT;
+                goto CLEANEV;
             }
             dtStamp = true;
 
             DateTime stamp;
             if ((error = initializeDateTime(line, &stamp)) != OK) {
                 fprintf(stdout, "DEBUG: in getEvent: initializeDateTime failed somehow\n");
-                deleteEvent(*event);
-                *event = NULL;
-                free(parse);
-                return error;
+                goto CLEANEV;
             }
 
             char *printDTS = printDate(&stamp);
@@ -273,20 +285,15 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             // start of event
             if (dtStart) {
                 fprintf(stdout, "\tDEBUG: in getEvent: found a second instance of a DTSTART property\n");
-                deleteEvent(*event);
-                *event = NULL;
-                free(parse);
-                return INV_EVENT;
+                error = INV_EVENT;
+                goto CLEANEV;
             }
             dtStart = true;
 
             DateTime start;
             if ((error = initializeDateTime(line, &start)) != OK) {
                 fprintf(stdout, "DEBUG: in getEvent: initializeDateTime failed somehow\n");
-                deleteEvent(*event);
-                *event = NULL;
-                free(parse);
-                return error;
+                goto CLEANEV;
             }
 
             char *printDTStrt = printDate(&start);
@@ -297,10 +304,8 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         } else if (startsWith(parse, "UID")) {
             if (UID) {
                 fprintf(stdout, "\tDEBUG: in getEvent: encountered a second UID property\n");
-                deleteEvent(*event);
-                *event = NULL;
-                free(parse);
-                return INV_EVENT;
+                error = INV_EVENT;
+                goto CLEANEV;
             }
             UID = true;
 
@@ -309,10 +314,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             Alarm *toAdd;
             if ((error = getAlarm(fp, &toAdd)) != OK) {
                 fprintf(stdout, "\tDEBUG: in getEvent: encountered error when getting an Alarm\n");
-                deleteEvent(*event);
-                *event = NULL;
-                free(parse);
-                return error;
+                goto CLEANEV;
             }
 
             insertFront((*event)->alarms, (void *)toAdd);
@@ -320,18 +322,13 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
                 fprintf(stdout, "DEBUG: in getEvent: initializeProperty failed somehow\n");
-                deleteEvent(*event);
-                *event = NULL;
-                free(parse);
-                return error;
+                goto CLEANEV;
             }
 
             if (prop == NULL) {
                 fprintf(stdout, "\tDEBUG: in getEvent: encountered error when initializing property\n");
-                deleteEvent(*event);
-                *event = NULL;
-                free(parse);
-                return INV_CAL;
+                error = INV_CAL;
+                goto CLEANEV;
             }
 
             insertFront((*event)->properties, (void *)prop);
@@ -339,20 +336,39 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     }
 
     free(parse);
+    parse = NULL;
 
     // the file can't end without hitting END:VEVENT (and also END:VCALENDAR)
     if (!endEvent) {
         fprintf(stdout, "DEBUG: in getEvent: hit end of file before reaching an END:VEVENT\n");
-        deleteAlarm(*event);
-        *event = NULL;
-        return INV_EVENT;
+        error = INV_EVENT;
+        goto CLEANEV;
     }
 
     fprintf(stdout, "DEBUG: finished getEvent() successfully\n");
     return OK;
+
+    // Event cleanup
+CLEANEV:    deleteEvent(*event);
+            *event = NULL;
+            if (parse != NULL) {
+                free(parse);
+            }
+            return error;
 }
 
 
+/* XXX XXX XXX
+ * Ok listen. I'm warning you right now, this function uses goto statements. But hear me out for a second.
+ * There are LOTS of fail cases for this function. iCal files can go horribly wrong in tons of ways.
+ * On a failure, memory needs to be freed, errors need to be returned, EVERY TIME an error with the
+ * file is found. So those 3-4 cleanup statements are repeated several times in the entire function.
+ * I personally am against making lots of similar-looking cleanup functions, since it clutters up
+ * the function-space of the whole project.
+ * And so, the goto statement reigns supreme (also, Nikitenko brought up how he thinks goto statements
+ * aren't the complete devil 100% of the time, just 99% of the time, and can be useful for scenarios
+ * precisely like this one.)
+ * XXX XXX XXX */
 ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     char line[10000], *parse;
     bool trigger, action;
@@ -386,14 +402,13 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
         if (startsWith(parse, ";")) {
             // lines that start with ';' are comments and should be ignored
             free(parse);
+            parse = NULL;
             continue;
         } else if (startsWith(parse, "TRIGGER")) {
             if (trigger) {
                 fprintf(stdout, "\tDEBUG: in getAlarm: found a second instance of a TRIGGER property\n");
-                deleteAlarm(*alarm);
-                *alarm = NULL;
-                free(parse);
-                return INV_ALARM;
+                error = INV_ALARM;
+                goto CLEANAL;
             }
             trigger = true;
 
@@ -404,10 +419,8 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
         } else if (startsWith(parse, "ACTION")) {
             if (action) {
                 fprintf(stdout, "\tDEBUG: in getAlarm: found a second instance of a ACTION property\n");
-                deleteAlarm(*alarm);
-                *alarm = NULL;
-                free(parse);
-                return INV_ALARM;
+                error = INV_ALARM;
+                goto CLEANAL;
             }
             action = true;
 
@@ -417,10 +430,7 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
                 fprintf(stdout, "DEBUG: in getAlarm: initializeProperty() failed somehow\n");
-                deleteAlarm(*alarm);
-                *alarm = NULL;
-                free(parse);
-                return error;
+                goto CLEANAL;
             }
 
             insertFront((*alarm)->properties, (void *)prop);
@@ -428,16 +438,24 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     }
 
     free(parse);
+    parse = NULL;
 
     // the file can't end without hitting END:VALARM (and also END:VCALENDAR)
     if (feof(fp)) {
         fprintf(stdout, "DEBUG: in getAlarm: hit end of file before reaching an END:VALARM\n");
-        deleteAlarm(*alarm);
-        *alarm = NULL;
-        return INV_ALARM;
+        error = INV_ALARM;
+        goto CLEANAL;
     }
 
     fprintf(stdout, "DEBUG: finished getAlarm() successfully\n");
     return OK;
+
+    // Alarm cleanup
+CLEANAL:    deleteAlarm(*alarm);
+            *alarm = NULL;
+            if (parse != NULL) {
+                free(parse);
+            }
+            return error;
 }
 
