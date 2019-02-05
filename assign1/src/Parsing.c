@@ -318,6 +318,14 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             }
 
             insertFront((*event)->alarms, (void *)toAdd);
+        } else if (startsWith(parse, "END:VALARM")) {
+            fprintf(stdout, "\tDEBUG: in getEvent: found duplicate end of alarm: \"%s\"\n", line);
+            error = INV_EVENT;
+            goto CLEANEV;
+        } else if (startsWith(parse, "BEGIN:VEVENT")) {
+            fprintf(stdout, "\tDEBUG: in getEvent: found start of new event \"%s\"\n", line);
+            error = INV_EVENT;
+            goto CLEANEV;
         } else {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
@@ -426,6 +434,10 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
 
             strcpy((*alarm)->action, line + 7);
             fprintf(stdout, "\tDEBUG: in getAlarm: action = \"%s\"\n", (*alarm)->action);
+        } else if (startsWith(parse, "BEGIN:VALARM") || startsWith(parse, "BEGIN:VEVENT")) {
+            fprintf(stdout, "\tDEBUG: in getAlarm: found a start of another alarm or event: \"%s\"\n", line);
+            error = INV_ALARM;
+            goto CLEANAL
         } else {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {

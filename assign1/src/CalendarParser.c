@@ -169,6 +169,11 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             fprintf(stdout, "ERROR: in createCalendar: found an alarm not in an event\n");
             cleanup(obj, parse, fin);
             return INV_ALARM;
+        } else if (startsWith(parse, "END:VEVENT") || startsWith(parse, "END:VALARM")) {
+            // a duplicated END tag was found
+            fprintf(stdout, "Found a duplicated END tag: \"%s\"\n", line);
+            cleanup(obj, parse, fin);
+            return INV_CAL;
         } else {
             // All other BEGIN: clauses have been handled in their own 'else if' case.
             // If another one is hit, then it is an error.
