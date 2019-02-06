@@ -8,4 +8,9 @@ DESCRIPTION:A simple calendar that tests parsing of properties.
   example of a properly formatted iCal object.
 STATUS:CONFIRMED
 ORGANIZER;CN="John Smith":mailto:johnsmith@webmail.ca
+BEGIN:VEVENT
+uid:436726784932
+DTSTART:11111111t111111
+DTSTAMP:11111111t111111
+END:VEVENT
 END:VCALENDAR
