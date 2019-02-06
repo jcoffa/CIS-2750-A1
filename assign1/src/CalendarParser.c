@@ -31,6 +31,13 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     char *parse;
     version = prodID = method = beginCal = endCal = false;
 
+    // Prof said not to check for obj being NULL, but you can't dereference a NULL pointer,
+    // so I think he meant "don't worry if *obj = NULL, since it is being overwritten", and in
+    // order to dereference it then the double pointer passed into the function can't be NULL.
+    if (obj == NULL) {
+        return OTHER_ERROR;
+    }
+
     // filename can't be null or an empty string, and must end with the '.ics' extension
     if (fileName == NULL || strcmp(fileName, "") == 0 || !endsWith(fileName, ".ics")) {
         *obj = NULL;
@@ -53,12 +60,22 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
     char line[10000];
     while (!feof(fin)) {
-        fprintf(stdout, "DEBUG: in createCalendar: version=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
-                version, prodID, method, beginCal, endCal);
-        readFold(line, 10000, fin);
+        // readFold returns NULL when the raw line does not end with a \r\n sequence
+        // (i.e. the file has invalid line endings)
+        if (readFold(line, 10000, fin) == NULL) {
+            cleanup(obj, NULL, fin);
+            return INV_FILE;
+        }
+
         parse = strUpperCopy(line);
 
-        fprintf(stdout, "DEBUG: in createCalendar: unfolded, capitalized line: \"%s\"\n", parse);
+        // Empty lines/lines containing just whitespace are NOT permitted
+        // by the iCal specification.
+        // (readFold function automatically trims whitespace)
+        if (strlen(parse) == 0) {
+            cleanup(obj, parse, fin);
+            return INV_CAL;
+        }
         
         if (startsWith(parse, ";")) {
             // lines starting with a semicolon (;) are comments, and
@@ -77,12 +94,10 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         }
 
         // The first non-commented line must be BEGIN:VCALENDAR
-        if (!beginCal && !startsWith(parse, "BEGIN:VCALENDAR")) {
-            fprintf(stdout, "ERROR: in createCalendar: file does not start with BEGIN:VCALENDAR\n");
+        if (!beginCal && !strcmp(parse, "BEGIN:VCALENDAR") == 0) {
             cleanup(obj, parse, fin);
             return INV_CAL;
         } else if (!beginCal) {
-            fprintf(stdout, "DEBUG: in createCalendar: First non-comment line was BEGIN:VCALENDAR\n");
             beginCal = true;
             free(parse);
             continue;
@@ -149,13 +164,13 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
             insertFront((*obj)->properties, (void *)methodProp);
             method = true;
-        } else if (startsWith(parse, "END:VCALENDAR")) {
+        } else if (strcmp(parse, "END:VCALENDAR") == 0) {
             endCal = true;
-        } else if (startsWith(parse, "BEGIN:VCALENDAR")) {
+        } else if (strcmp(parse, "BEGIN:VCALENDAR") == 0) {
             // only 1 calendar allowed per file
             cleanup(obj, parse, fin);
             return INV_CAL;
-        } else if (startsWith(parse, "BEGIN:VEVENT")) {
+        } else if (strcmp(parse, "BEGIN:VEVENT") == 0) {
             Event *event;
             if ((error = getEvent(fin, &event)) != OK) {
                 // something happened, and the event could not be created properly
@@ -164,12 +179,12 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             }
 
             insertFront((*obj)->events, (void *)event);
-        } else if (startsWith(parse, "BEGIN:VALARM")) {
+        } else if (strcmp(parse, "BEGIN:VALARM") == 0) {
             // there can't be an alarm for an entire calendar
             fprintf(stdout, "ERROR: in createCalendar: found an alarm not in an event\n");
             cleanup(obj, parse, fin);
             return INV_ALARM;
-        } else if (startsWith(parse, "END:VEVENT") || startsWith(parse, "END:VALARM")) {
+        } else if (strcmp(parse, "END:VEVENT") == 0 || strcmp(parse, "END:VALARM") == 0) {
             // a duplicated END tag was found
             fprintf(stdout, "Found a duplicated END tag: \"%s\"\n", line);
             cleanup(obj, parse, fin);
@@ -199,10 +214,6 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
         printf("\n");   // DEBUG:
     }
     fclose(fin);
-
-
-    printf("\nDEBUG: in createCalendar after parsing file:\n\tversion=%d, prodID=%d, method=%d, beginCal=%d, endCal=%d\n", \
-           version, prodID, method, beginCal, endCal);
 
     // Calendars require a few mandatory elements. If one does not have
     // any of these properties/lines, it is invalid.
@@ -250,12 +261,10 @@ char* printCalendar(const Calendar* obj) {
 
     // check for malloc failing
     if (toReturn == NULL) {
-        fprintf(stdout, "CALL TO MALLOC FAILED IN printCalendar()\n");
         return NULL;
     }
 
     if (obj == NULL) {
-        printf("OBJ IS NULL\n");
         return NULL;
     }
 

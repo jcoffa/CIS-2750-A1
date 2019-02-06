@@ -178,6 +178,11 @@ char *readFold(char *unfolded, int size, FILE *fp) {
     strcpy(unfolded, "");
 
     while (fgets(buf, sizeLeft, fp)) {
+        if (!endsWith(buf, "\r\n")) {
+            // line endings are incorrect
+            return NULL;
+        }
+
         if (buf[0] == ';') {
             // lines that begin with a semicolon are comments and should be ignored
             continue;
@@ -197,10 +202,6 @@ char *readFold(char *unfolded, int size, FILE *fp) {
         // the line must have begun with a space, meaning there is a fold present
         concat(unfolded, buf);
         foundFold = true;
-    }
-
-    if (sizeLeft < 0) {
-        printf("\t--- ERROR --- readFold exceeded read size of %d characters\n", size);
     }
 
     unfold(unfolded);
@@ -244,13 +245,13 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         // This check can't be in the condition for the while loop, since
         // iCal files are case insensitive, and therefore the case must be
         // made uniform (i.e. put through strUpper) before checking.
-        if (startsWith(parse, "END:VEVENT")) {
+        if (strcmp(parse, "END:VEVENT") == 0) {
             fprintf(stdout, "\tDEBUG: in getEvent: line containd END:VEVENT\n");
             endEvent = true;
             break;
         }
 
-        if (startsWith(parse, "END:VCALENDAR")) {
+        if (strcmp(parse, "END:VCALENDAR") == 0) {
             fprintf(stdout, "\tDEBUG: in getEvent: hit the end of the calendar before the end of the event");
             error = INV_EVENT;
             goto CLEANEV;
@@ -276,9 +277,9 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
                 goto CLEANEV;
             }
 
-            char *printDTS = printDate(&stamp);
+            char *printDTS = printDate(&stamp); // printf
             fprintf(stdout, "DEBUG: in getEvent: created DateTime Stamp: \"%s\"\n", printDTS);
-            free(printDTS);
+            free(printDTS); // printf
 
             (*event)->creationDateTime = stamp;
         } else if (startsWith(parse, "DTSTART")) {
@@ -296,9 +297,9 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
                 goto CLEANEV;
             }
 
-            char *printDTStrt = printDate(&start);
+            char *printDTStrt = printDate(&start); // printf
             fprintf(stdout, "DEBUG: in getEvent: created DateTime Start: \"%s\"\n", printDTStrt);
-            free(printDTStrt);
+            free(printDTStrt); // printf
 
             (*event)->startDateTime = start;
         } else if (startsWith(parse, "UID")) {
@@ -310,7 +311,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             UID = true;
 
             strcpy((*event)->UID, line + 4);
-        } else if (startsWith(parse, "BEGIN:VALARM")) {
+        } else if (strcmp(parse, "BEGIN:VALARM") == 0) {
             Alarm *toAdd;
             if ((error = getAlarm(fp, &toAdd)) != OK) {
                 fprintf(stdout, "\tDEBUG: in getEvent: encountered error when getting an Alarm\n");
@@ -318,11 +319,11 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
             }
 
             insertFront((*event)->alarms, (void *)toAdd);
-        } else if (startsWith(parse, "END:VALARM")) {
+        } else if (strcmp(parse, "END:VALARM") == 0) {
             fprintf(stdout, "\tDEBUG: in getEvent: found duplicate end of alarm: \"%s\"\n", line);
             error = INV_EVENT;
             goto CLEANEV;
-        } else if (startsWith(parse, "BEGIN:VEVENT")) {
+        } else if (strcmp(parse, "BEGIN:VEVENT") == 0) {
             fprintf(stdout, "\tDEBUG: in getEvent: found start of new event \"%s\"\n", line);
             error = INV_EVENT;
             goto CLEANEV;
@@ -403,7 +404,7 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
         // This check can't be in the condition for the while loop, since
         // iCal files are case insensitive, and therefore the case must be
         // made uniform before checking.
-        if (startsWith(parse, "END:VALARM")) {
+        if (strcmp(parse, "END:VALARM") == 0) {
             break;
         }
 
@@ -434,7 +435,7 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
 
             strcpy((*alarm)->action, line + 7);
             fprintf(stdout, "\tDEBUG: in getAlarm: action = \"%s\"\n", (*alarm)->action);
-        } else if (startsWith(parse, "BEGIN:VALARM") || startsWith(parse, "BEGIN:VEVENT")) {
+        } else if (strcmp(parse, "BEGIN:VALARM") == 0 || strcmp(parse, "BEGIN:VEVENT") == 0) {
             fprintf(stdout, "\tDEBUG: in getAlarm: found a start of another alarm or event: \"%s\"\n", line);
             error = INV_ALARM;
             goto CLEANAL;
@@ -455,6 +456,11 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     // the file can't end without hitting END:VALARM (and also END:VCALENDAR)
     if (feof(fp)) {
         fprintf(stdout, "DEBUG: in getAlarm: hit end of file before reaching an END:VALARM\n");
+        error = INV_ALARM;
+        goto CLEANAL;
+    }
+
+    if (!trigger || !action) {
         error = INV_ALARM;
         goto CLEANAL;
     }

@@ -30,8 +30,6 @@ ICalErrorCode initializeDateTime(const char *line, DateTime *dt) {
     int colonIndex = strcspn(line, delimData);
     int tIndex = strcspn(line, delimTime);
 
-    fprintf(stdout, "\tDEBUG: in initializeDateTime: line (length of %d) = \"%s\"\n", len, line);
-
     // the line contains no characters in 'delim', or the letter 't'
     // which is necessary to differentiate the date and time parts of a DateTime
     // or it follows FORM #3 of the DateTime forms (as stated in section 3.3.5
