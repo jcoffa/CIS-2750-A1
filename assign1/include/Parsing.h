@@ -72,9 +72,10 @@ char *strUpperCopy(const char *string);
  * CRLF(whitesapce) sequences.
  * 'unfold' must be large enough to hold the entire string.
  *
- * Returns the unfolded line after removing all leading and trailing whitespace characters.
+ * Returns OK on a success, INV_FILE if imvalid line endings are found, and any other
+ * relevant error if an error is found (for example, INV_CAL if an empty line is found)
  */
-char *readFold(char *unfolded, int size, FILE *fp);
+ICalErrorCode readFold(char *unfolded, int size, FILE *fp);
 
 
 ICalErrorCode getEvent(FILE *fp, Event **event);

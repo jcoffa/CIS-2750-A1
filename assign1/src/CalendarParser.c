@@ -27,9 +27,9 @@
 ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     FILE *fin;
     ICalErrorCode error;
-    bool version, prodID, method, beginCal, endCal;
+    bool version, prodID, method, beginCal, endCal, foundEvent;
     char *parse;
-    version = prodID = method = beginCal = endCal = false;
+    version = prodID = method = beginCal = endCal = foundEvent = false;
 
     // Prof said not to check for obj being NULL, but you can't dereference a NULL pointer,
     // so I think he meant "don't worry if *obj = NULL, since it is being overwritten", and in
@@ -62,12 +62,14 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     while (!feof(fin)) {
         // readFold returns NULL when the raw line does not end with a \r\n sequence
         // (i.e. the file has invalid line endings)
-        if (readFold(line, 10000, fin) == NULL) {
+        if ((error = readFold(line, 10000, fin)) != OK) {
             cleanup(obj, NULL, fin);
-            return INV_FILE;
+            return error;
         }
 
         parse = strUpperCopy(line);
+
+        //fprintf(stdout, "DEBUG: in createCalendar: upper'd line = \"%s\"\n", parse);
 
         // Empty lines/lines containing just whitespace are NOT permitted
         // by the iCal specification.
@@ -82,7 +84,6 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             // should be ignored
             free(parse);
             parse = NULL;
-            printf("\n");
             continue;
         }
 
@@ -111,19 +112,19 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 return DUP_VER;
             }
 
-            fprintf(stdout, "DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
+            //fprintf(stdout, "DEBUG: in createCalendar: found VERSION line: \"%s\"\n", line);
             char *endptr;
             // +8 to start conversion after the 'VERSION:' part of the string
             (*obj)->version = strtof(line + 8, &endptr);
 
-            if (strlen(line + 8) == 0 || line+8 == endptr) {
+            if (strlen(line + 8) == 0 || line+8 == endptr || *endptr != '\0') {
                 // VERSION property contains no data after the ':', or the data
                 // could not be converted into a number
                 cleanup(obj, parse, fin);
                 return INV_VER;
             }
 
-            fprintf(stdout, "DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
+            //fprintf(stdout, "DEBUG: in createCalendar: set version to %f\n", (*obj)->version);
             version = true;
         } else if (startsWith(parse, "PRODID:")) {
             if (prodID) {
@@ -138,9 +139,9 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
             }
 
             // +7 to only copy characters past 'PRODID:' part of the string
-            fprintf(stdout, "DEBUG: in createCalendar: found PRODID line: \"%s\"\n", line);
+            //fprintf(stdout, "DEBUG: in createCalendar: found PRODID line: \"%s\"\n", line);
             strcpy((*obj)->prodID, line + 7);
-            fprintf(stdout, "DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
+            //fprintf(stdout, "DEBUG: in createCalendar: set product ID to\"%s\"\n", (*obj)->prodID);
             prodID = true;
         } else if (startsWith(parse, "METHOD:")) {
             if (method) {
@@ -154,7 +155,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 return INV_CAL;
             }
 
-            fprintf(stdout, "DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
+            //fprintf(stdout, "DEBUG: in createCalendar: found METHOD line: \"%s\"\n", line);
             Property *methodProp;
             if ((error = initializeProperty(line, &methodProp)) != OK) {
                 // something happened, and the property could not be created properly
@@ -177,28 +178,29 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
                 cleanup(obj, parse, fin);
                 return error;
             }
+            foundEvent = true;
 
             insertFront((*obj)->events, (void *)event);
         } else if (strcmp(parse, "BEGIN:VALARM") == 0) {
             // there can't be an alarm for an entire calendar
-            fprintf(stdout, "ERROR: in createCalendar: found an alarm not in an event\n");
+            //fprintf(stdout, "ERROR: in createCalendar: found an alarm not in an event\n");
             cleanup(obj, parse, fin);
             return INV_ALARM;
         } else if (strcmp(parse, "END:VEVENT") == 0 || strcmp(parse, "END:VALARM") == 0) {
             // a duplicated END tag was found
-            fprintf(stdout, "Found a duplicated END tag: \"%s\"\n", line);
+            //fprintf(stdout, "Found a duplicated END tag: \"%s\"\n", line);
             cleanup(obj, parse, fin);
             return INV_CAL;
         } else {
             // All other BEGIN: clauses have been handled in their own 'else if' case.
             // If another one is hit, then it is an error.
             if (startsWith(parse, "BEGIN:")) {
-                fprintf(stdout, "ERROR: in createCalendar: Found an illegal BEGIN: \"%s\"\n", line);
+                //fprintf(stdout, "ERROR: in createCalendar: Found an illegal BEGIN: \"%s\"\n", line);
                 cleanup(obj, parse, fin);
                 return INV_CAL;
             }
 
-            fprintf(stdout, "DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
+            //fprintf(stdout, "DEBUG: in createCalendar: found non-mandatory property: \"%s\"\n", line);
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
                 // something happened, and the property could not be created properly
@@ -211,21 +213,12 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 
         free(parse);
         parse = NULL;
-        printf("\n");   // DEBUG:
     }
     fclose(fin);
 
     // Calendars require a few mandatory elements. If one does not have
     // any of these properties/lines, it is invalid.
-    if (!prodID) {
-        cleanup(obj, parse, NULL);
-        return INV_PRODID;
-    }
-    if (!version) {
-        cleanup(obj, parse, NULL);
-        return INV_VER;
-    }
-    if (!endCal) {
+    if (!endCal || !foundEvent || !version || !prodID) {
         cleanup(obj, parse, NULL);
         return INV_CAL;
     }

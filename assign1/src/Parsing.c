@@ -166,11 +166,13 @@ char *strUpperCopy(const char *string) {
  * CRLF(whitesapce) sequences.
  * 'unfold' must be large enough to hold the entire string.
  *
- * Returns the unfolded line after removing all leading and trailing whitespace characters.
+ * Returns OK on a success, INV_FILE if imvalid line endings are found, and any other
+ * relevant error if an error is found (for example, INV_CAL if an empty line is found)
  */
-char *readFold(char *unfolded, int size, FILE *fp) {
+ICalErrorCode readFold(char *unfolded, int size, FILE *fp) {
     char buf[size];
     bool foundFold = false;
+    bool allWhitespace;
     int sizeLeft = size;
     int bufLength;
 
@@ -178,9 +180,26 @@ char *readFold(char *unfolded, int size, FILE *fp) {
     strcpy(unfolded, "");
 
     while (fgets(buf, sizeLeft, fp)) {
+        //fprintf(stdout, "\tDEBUG: in readFold: raw buf = \"%s\"\n", buf);
+
+        // check if the line is entirely blank lines
+        allWhitespace = true;
+        for (int i = 0; i < strlen(buf); i++) {
+            if (!isspace(buf[i])) {
+                //fprintf(stdout, "\tDEBUG: in readFold: found non-whitespace character: %c - %d\n", buf[i], (unsigned int)buf[i]);
+                allWhitespace = false;
+                break;
+            }
+        }
+        if (allWhitespace) {
+            //fprintf(stdout, "\tDEBUG: in readFold: found an all-whitespace line\n");
+            // blank lines are not allowed
+            return INV_CAL;
+        }
+
         if (!endsWith(buf, "\r\n")) {
             // line endings are incorrect
-            return NULL;
+            return INV_FILE;
         }
 
         if (buf[0] == ';') {
@@ -205,7 +224,8 @@ char *readFold(char *unfolded, int size, FILE *fp) {
     }
 
     unfold(unfolded);
-    return trimWhitespace(unfolded);
+    trimWhitespace(unfolded);
+    return OK;
 }
 
 
@@ -227,7 +247,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     parse = NULL;
     dtStamp = dtStart = UID = false;
 
-    fprintf(stdout, "\tDEBUG: Started getEvent()\n");
+    //fprintf(stdout, "\tDEBUG: Started getEvent()\n");
 
     if ((error = initializeEvent(event)) != OK) {
         return error;
@@ -236,23 +256,27 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     while (!feof(fp)) {
         if (parse != NULL) {
             free(parse);
+            parse = NULL;
         }
 
-        readFold(line, 10000, fp);
+        if ((error = readFold(line, 10000, fp)) != OK) {
+            goto CLEANEV;
+        }
+
         parse = strUpperCopy(line);
-        fprintf(stdout, "\tDEBUG: in getEvent: unfolded, upper'd line: \"%s\"\n", parse);
+        //fprintf(stdout, "\tDEBUG: in getEvent: unfolded, upper'd line: \"%s\"\n", parse);
 
         // This check can't be in the condition for the while loop, since
         // iCal files are case insensitive, and therefore the case must be
         // made uniform (i.e. put through strUpper) before checking.
         if (strcmp(parse, "END:VEVENT") == 0) {
-            fprintf(stdout, "\tDEBUG: in getEvent: line containd END:VEVENT\n");
+            //fprintf(stdout, "\tDEBUG: in getEvent: line containd END:VEVENT\n");
             endEvent = true;
             break;
         }
 
         if (strcmp(parse, "END:VCALENDAR") == 0) {
-            fprintf(stdout, "\tDEBUG: in getEvent: hit the end of the calendar before the end of the event");
+            //fprintf(stdout, "\tDEBUG: in getEvent: hit the end of the calendar before the end of the event");
             error = INV_EVENT;
             goto CLEANEV;
         }
@@ -265,7 +289,7 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
         } else if (startsWith(parse, "DTSTAMP")) {
             // creation date of event
             if (dtStamp) {
-                fprintf(stdout, "\tDEBUG: in getEvent: found a second instance of a DTSTAMP property\n");
+                //fprintf(stdout, "\tDEBUG: in getEvent: found a second instance of a DTSTAMP property\n");
                 error = INV_EVENT;
                 goto CLEANEV;
             }
@@ -273,19 +297,19 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
             DateTime stamp;
             if ((error = initializeDateTime(line, &stamp)) != OK) {
-                fprintf(stdout, "DEBUG: in getEvent: initializeDateTime failed somehow\n");
+                //fprintf(stdout, "DEBUG: in getEvent: initializeDateTime failed somehow\n");
                 goto CLEANEV;
             }
 
-            char *printDTS = printDate(&stamp); // printf
-            fprintf(stdout, "DEBUG: in getEvent: created DateTime Stamp: \"%s\"\n", printDTS);
-            free(printDTS); // printf
+            //char *printDTS = printDate(&stamp);
+            //fprintf(stdout, "DEBUG: in getEvent: created DateTime Stamp: \"%s\"\n", printDTS);
+            //free(printDTS);
 
             (*event)->creationDateTime = stamp;
         } else if (startsWith(parse, "DTSTART")) {
             // start of event
             if (dtStart) {
-                fprintf(stdout, "\tDEBUG: in getEvent: found a second instance of a DTSTART property\n");
+                //fprintf(stdout, "\tDEBUG: in getEvent: found a second instance of a DTSTART property\n");
                 error = INV_EVENT;
                 goto CLEANEV;
             }
@@ -293,49 +317,59 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
 
             DateTime start;
             if ((error = initializeDateTime(line, &start)) != OK) {
-                fprintf(stdout, "DEBUG: in getEvent: initializeDateTime failed somehow\n");
+                //fprintf(stdout, "DEBUG: in getEvent: initializeDateTime failed somehow\n");
                 goto CLEANEV;
             }
 
-            char *printDTStrt = printDate(&start); // printf
-            fprintf(stdout, "DEBUG: in getEvent: created DateTime Start: \"%s\"\n", printDTStrt);
-            free(printDTStrt); // printf
+            //char *printDTStrt = printDate(&start);
+            //fprintf(stdout, "DEBUG: in getEvent: created DateTime Start: \"%s\"\n", printDTStrt);
+            //free(printDTStrt);
 
             (*event)->startDateTime = start;
         } else if (startsWith(parse, "UID")) {
             if (UID) {
-                fprintf(stdout, "\tDEBUG: in getEvent: encountered a second UID property\n");
+                //fprintf(stdout, "\tDEBUG: in getEvent: encountered a second UID property\n");
                 error = INV_EVENT;
                 goto CLEANEV;
             }
+
+            // UID is empty
+            if (strlen(line+4) == 0) {
+                error = INV_EVENT;
+                goto CLEANEV;
+            }
+
             UID = true;
 
             strcpy((*event)->UID, line + 4);
         } else if (strcmp(parse, "BEGIN:VALARM") == 0) {
             Alarm *toAdd;
             if ((error = getAlarm(fp, &toAdd)) != OK) {
-                fprintf(stdout, "\tDEBUG: in getEvent: encountered error when getting an Alarm\n");
+                //fprintf(stdout, "\tDEBUG: in getEvent: encountered error when getting an Alarm\n");
                 goto CLEANEV;
             }
 
             insertFront((*event)->alarms, (void *)toAdd);
         } else if (strcmp(parse, "END:VALARM") == 0) {
-            fprintf(stdout, "\tDEBUG: in getEvent: found duplicate end of alarm: \"%s\"\n", line);
+            //fprintf(stdout, "\tDEBUG: in getEvent: found duplicate end of alarm: \"%s\"\n", line);
             error = INV_EVENT;
             goto CLEANEV;
         } else if (strcmp(parse, "BEGIN:VEVENT") == 0) {
-            fprintf(stdout, "\tDEBUG: in getEvent: found start of new event \"%s\"\n", line);
+            //fprintf(stdout, "\tDEBUG: in getEvent: found start of new event \"%s\"\n", line);
             error = INV_EVENT;
             goto CLEANEV;
         } else {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
-                fprintf(stdout, "DEBUG: in getEvent: initializeProperty failed somehow\n");
+                //fprintf(stdout, "DEBUG: in getEvent: initializeProperty failed somehow\n");
+                if (error != OTHER_ERROR) {
+                    error = INV_EVENT;
+                }
                 goto CLEANEV;
             }
 
             if (prop == NULL) {
-                fprintf(stdout, "\tDEBUG: in getEvent: encountered error when initializing property\n");
+                //fprintf(stdout, "\tDEBUG: in getEvent: encountered error when initializing property\n");
                 error = INV_CAL;
                 goto CLEANEV;
             }
@@ -348,13 +382,14 @@ ICalErrorCode getEvent(FILE *fp, Event **event) {
     parse = NULL;
 
     // the file can't end without hitting END:VEVENT (and also END:VCALENDAR)
-    if (!endEvent) {
-        fprintf(stdout, "DEBUG: in getEvent: hit end of file before reaching an END:VEVENT\n");
+    // along with a few other mandatory propeprties
+    if (!UID || !dtStart || !dtStamp || !endEvent) {
+        //fprintf(stdout, "\tDEBUG: in getEvent: missing a mandatory property: uid=%d, dtStart=%d, dtStamp=%d, endEvent=%d\n", UID, dtStart, dtStamp, endEvent);
         error = INV_EVENT;
         goto CLEANEV;
     }
 
-    fprintf(stdout, "DEBUG: finished getEvent() successfully\n");
+    //fprintf(stdout, "DEBUG: finished getEvent() successfully\n");
     return OK;
 
     // Event cleanup
@@ -380,14 +415,14 @@ CLEANEV:    deleteEvent(*event);
  * XXX XXX XXX */
 ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     char line[10000], *parse;
-    bool trigger, action;
+    bool trigger, action, endAlarm;
     ICalErrorCode error;
     parse = NULL;
     trigger = action = false;
 
-    fprintf(stdout, "DEBUG: started getAlarm()\n");
+    //fprintf(stdout, "DEBUG: started getAlarm()\n");
     if ((error = initializeAlarm(alarm)) != OK) {
-        fprintf(stdout, "DEBUG: in getAlarm: initializeAlarm() failed somehow\n");
+        //fprintf(stdout, "DEBUG: in getAlarm: initializeAlarm() failed somehow\n");
         *alarm = NULL;
         return error;
     }
@@ -395,17 +430,29 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     while (!feof(fp)) {
         if (parse != NULL) {
             free(parse);
+            parse = NULL;
         }
 
-        readFold(line, 10000, fp);
+        if ((error = readFold(line, 10000, fp)) != OK) {
+            goto CLEANAL;
+        }
+
         parse = strUpperCopy(line);
-        fprintf(stdout, "\tDEBUG: in getAlarm: unfolded, upper'd line: \"%s\"\n", parse);
+        //fprintf(stdout, "\tDEBUG: in getAlarm: unfolded, upper'd line: \"%s\"\n", parse);
 
         // This check can't be in the condition for the while loop, since
         // iCal files are case insensitive, and therefore the case must be
         // made uniform before checking.
         if (strcmp(parse, "END:VALARM") == 0) {
+            //fprintf(stdout, "\tDEBUG: in getAlarm: hit END:VALARM\n");
+            endAlarm = true;
             break;
+        }
+
+        if (strcmp(parse, "END:VCALENDAR") == 0) {
+            //fprintf(stdout, "\tDEBUG: in getAlarm: hit END:VCALENDAR\n");
+            error = INV_ALARM;
+            goto CLEANAL;
         }
 
         if (startsWith(parse, ";")) {
@@ -415,34 +462,49 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
             continue;
         } else if (startsWith(parse, "TRIGGER")) {
             if (trigger) {
-                fprintf(stdout, "\tDEBUG: in getAlarm: found a second instance of a TRIGGER property\n");
+                //fprintf(stdout, "\tDEBUG: in getAlarm: found a second instance of a TRIGGER property\n");
                 error = INV_ALARM;
                 goto CLEANAL;
             }
             trigger = true;
 
+            if (strlen(line+8) == 0) {
+                //fprintf(stdout, "\tDEBUG: in getAlarm: TRIGGER property is empty\n");
+                error = INV_ALARM;
+                goto CLEANAL;
+            }
+
             // -8 for the characters in 'TRIGGER:', +1 for null terminator
             (*alarm)->trigger = malloc(strlen(line) - 7);
             strcpy((*alarm)->trigger, line + 8);
-            fprintf(stdout, "\tDEBUG: in getAlarm: trigger = \"%s\"\n", (*alarm)->trigger);
+            //fprintf(stdout, "\tDEBUG: in getAlarm: trigger = \"%s\"\n", (*alarm)->trigger);
         } else if (startsWith(parse, "ACTION")) {
             if (action) {
-                fprintf(stdout, "\tDEBUG: in getAlarm: found a second instance of a ACTION property\n");
+                //fprintf(stdout, "\tDEBUG: in getAlarm: found a second instance of a ACTION property\n");
                 error = INV_ALARM;
                 goto CLEANAL;
             }
             action = true;
 
+            if (strlen(line+7) == 0) {
+                //fprintf(stdout, "\tDEBUG: in getAlarm: ACTION property is empty\n");
+                error = INV_ALARM;
+                goto CLEANAL;
+            }
+
             strcpy((*alarm)->action, line + 7);
-            fprintf(stdout, "\tDEBUG: in getAlarm: action = \"%s\"\n", (*alarm)->action);
+            //fprintf(stdout, "\tDEBUG: in getAlarm: action = \"%s\"\n", (*alarm)->action);
         } else if (strcmp(parse, "BEGIN:VALARM") == 0 || strcmp(parse, "BEGIN:VEVENT") == 0) {
-            fprintf(stdout, "\tDEBUG: in getAlarm: found a start of another alarm or event: \"%s\"\n", line);
+            //fprintf(stdout, "\tDEBUG: in getAlarm: found a start of another alarm or event: \"%s\"\n", line);
             error = INV_ALARM;
             goto CLEANAL;
         } else {
             Property *prop;
             if ((error = initializeProperty(line, &prop)) != OK) {
-                fprintf(stdout, "DEBUG: in getAlarm: initializeProperty() failed somehow\n");
+                //fprintf(stdout, "DEBUG: in getAlarm: initializeProperty() failed somehow\n");
+                if (error != OTHER_ERROR) {
+                    error = INV_ALARM;
+                }
                 goto CLEANAL;
             }
 
@@ -454,18 +516,12 @@ ICalErrorCode getAlarm(FILE *fp, Alarm **alarm) {
     parse = NULL;
 
     // the file can't end without hitting END:VALARM (and also END:VCALENDAR)
-    if (feof(fp)) {
-        fprintf(stdout, "DEBUG: in getAlarm: hit end of file before reaching an END:VALARM\n");
+    // and a few other mandatory properties
+    if (!trigger || !action | !endAlarm) {
         error = INV_ALARM;
         goto CLEANAL;
     }
 
-    if (!trigger || !action) {
-        error = INV_ALARM;
-        goto CLEANAL;
-    }
-
-    fprintf(stdout, "DEBUG: finished getAlarm() successfully\n");
     return OK;
 
     // Alarm cleanup
