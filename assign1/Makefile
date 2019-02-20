@@ -31,7 +31,7 @@ LDFLAGS := -L. -L$(OUT) $(addprefix -l,$(SHARED))
 # Make Rules #
 ##############
 
-all: list parser libparsing.so libinit.so main
+all: list parser libparsing.so libinit.so
 
 list: liblist.so
 
@@ -61,32 +61,13 @@ libinit.so: Initialize.o
 Initialize.o: Initialize.c Initialize.h
 	$(CC) $(CFLAGS) -c -fpic $(SRC)/Initialize.c -o $(OUT)/Initialize.o
 
-main: main.c $(addprefix lib,$(addsuffix .so,$(SHARED)))
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SRC)/main.c -o $(OUT)/main
-
 
 
 #############
 # Utilities #
 #############
 
-# make and run the main executable
-run:
-	$(MAKE) main
-	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH ./$(OUT)/main
-
-
-# make and run the main executable with valgrind
-memory:
-	$(MAKE) main
-	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(OUT)/main
-
-# make and run the main executable with gdb
-debug:
-	$(MAKE) main
-	LD_LIBRARY_PATH=.:$(OUT):$$LD_LIBRARY_PATH gdb ./$(OUT)/main
-
 # removes all .o and .so files, and the main executable
 clean:
-	rm $(OUT)/*.o $(OUT)/*.so $(OUT)/main
+	rm $(OUT)/*.o $(OUT)/*.so
 
