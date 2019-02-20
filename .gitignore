@@ -1,3 +1,5 @@
 *.pdf
 assign1/bin/*
 vgcore*
+*.zip
+testSubmission
